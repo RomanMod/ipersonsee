@@ -146,6 +146,8 @@ const settings = {
 const rgbHslCache = JSON.parse(localStorage.getItem('rgbHslCache')) || {};
 const wikidataCache = JSON.parse(localStorage.getItem('wikidataCache')) || {};
 let sessionList = [];
+let isStreamingActive = false;
+let currentStreamId = 0;
 let loadedPhotos = 0;
 let currentPerson = null;
 let userGenderGuess = null;
@@ -1443,94 +1445,122 @@ function handleError() {
 
 async function loadSession() {
     const startTime = performance.now();
-    console.time('[LOAD_SESSION_TIMING]');
-    console.log('[LOAD_SESSION] Starting to load new session data...');
+    console.log('[LOAD_SESSION] Starting dynamic background streaming session...');
     sessionList = [];
     
     preloadedPersonContainer = null;
     isCurrentlyPreloading = false;
     console.log('[PRELOAD_RESET] Preload state reset for new session.');
 
+    updateProgressBar(0, false); 
+
+    currentStreamId++;
+    const streamId = currentStreamId;
+    isStreamingActive = true;
+
+    // Define categories to interleave
     const categories = [
         { gender: 'male', status: 'alive' },
-        { gender: 'male', status: 'deceased' },
         { gender: 'female', status: 'alive' },
+        { gender: 'male', status: 'deceased' },
         { gender: 'female', status: 'deceased' }
     ];
 
-    updateProgressBar(0, false); 
-
-    try {
-        const peoplePerCategory = Math.ceil(settings.sessionPeople / categories.length);
-        let fetchedCount = 0;
-        const totalToFetch = peoplePerCategory * categories.length; 
-        console.log(`[LOAD_SESSION] Aiming for ${peoplePerCategory} people per category, total ~${totalToFetch}. Max session size: ${settings.sessionPeople}`);
-
-        const promises = [];
-        for (const category of categories) {
-            for (let j = 0; j < peoplePerCategory && sessionList.length < settings.sessionPeople; j++) {
-                promises.push(
-                    fetchPersonData(false, category).then(personBinding => { 
-                        if (personBinding) { 
-                            sessionList.push({ person: personBinding, category: category });
-                        } else {
-                            console.warn('[LOAD_SESSION_WARN] fetchPersonData returned null/undefined, skipping from session add.');
-                        }
-                        fetchedCount++;
-                        updateProgressBar((fetchedCount / totalToFetch) * 100, false); 
-                        return personBinding; 
-                    }).catch(error => {
-                        console.error(`[LOAD_SESSION_ERROR] Error fetching for category ${category.gender}/${category.status}: ${error.message}`);
-                        fetchedCount++; 
-                        updateProgressBar((fetchedCount / totalToFetch) * 100, false); 
-                        return null; 
-                    })
-                );
+    const targets = [];
+    const peoplePerCategory = Math.ceil(settings.sessionPeople / categories.length);
+    for (let j = 0; j < peoplePerCategory; j++) {
+        for (const cat of categories) {
+            if (targets.length < settings.sessionPeople) {
+                targets.push(cat);
             }
         }
-        
-        await Promise.all(promises);
-        sessionList = sessionList.filter(entry => 
-            entry && entry.person && 
-            entry.person.personLabel && entry.person.personLabel.value &&
-            entry.person.image && entry.person.image.value &&
-            entry.person.gender && entry.person.gender.value &&
-            entry.person.birthDate && entry.person.birthDate.value &&
-            entry.person.person && entry.person.person.value 
-        ).slice(0, settings.sessionPeople); 
-
-        console.log(`[LOAD_SESSION_COMPLETE] New session list loaded with ${sessionList.length} people.`);
-        logPhotoStatus();
-        updateProgressBar(100, false); 
-
-        if (sessionList.length > 0) {
-            hasChecked = false; 
-            const firstEntry = sessionList.shift(); 
-            console.log(`[LOAD_SESSION] Loading first person from new session: ${firstEntry.person.personLabel.value}`);
-            
-            await loadPersonFromData(firstEntry.person, firstEntry.category); 
-            
-            requestAnimationFrame(() => {
-                document.getElementById('male-btn').disabled = false;
-                document.getElementById('female-btn').disabled = false;
-                document.getElementById('alive-btn').disabled = false;
-                document.getElementById('dead-btn').disabled = false;
-                document.getElementById('next-person').style.display = 'none';
-                document.getElementById('next-photo').disabled = false; 
-                updateCheckButtonState();
-                console.log('[LOAD_SESSION_UI] UI reset for new person from session.');
-            });
-        } else {
-            console.error('[LOAD_SESSION_FAILURE] Session list is empty after fetching and filtering. Handling error.');
-            handleError();
-        }
-    } catch (error) {
-        console.error('[LOAD_SESSION_CRITICAL_ERROR] Overall session data loading failed:', error);
-        handleError();
-        updateProgressBar(0, false); 
     }
-    console.timeEnd('[LOAD_SESSION_TIMING]');
-    console.log(`[LOAD_SESSION_TIMING] Total session loading time: ${(performance.now() - startTime).toFixed(0)}ms`);
+
+    console.log(`[STREAM_QUEUE] Scheduled highly interleaved queue of ${targets.length} candidates. Starting parallel stream worker pool.`);
+
+    let targetIndex = 0;
+    let activePromisesCount = 0;
+
+    async function launchNextFetch() {
+        if (streamId !== currentStreamId) {
+            console.log(`[STREAM_QUEUE] Stream ID mismatch (${currentStreamId} vs task ${streamId}). Halting active worker.`);
+            return;
+        }
+
+        if (targetIndex >= targets.length || sessionList.length >= settings.sessionPeople) {
+            if (activePromisesCount === 0) {
+                isStreamingActive = false;
+                console.log(`[STREAM_QUEUE_COMPLETE] Background stream queue finished. Cached or loaded ${sessionList.length} total items in list.`);
+                updateProgressBar(100, false);
+                console.log(`[LOAD_SESSION_TIMING] Total stream load elapsed (since launch): ${(performance.now() - startTime).toFixed(0)}ms`);
+            }
+            return;
+        }
+
+        const category = targets[targetIndex++];
+        activePromisesCount++;
+
+        try {
+            const personBinding = await fetchPersonData(false, category);
+            
+            if (streamId !== currentStreamId) {
+                console.log('[STREAM_QUEUE] Stream ID changed mid-fetch. Discarded entry.');
+                return;
+            }
+
+            if (personBinding && 
+                personBinding.personLabel && personBinding.personLabel.value &&
+                personBinding.image && personBinding.image.value &&
+                personBinding.gender && personBinding.gender.value &&
+                personBinding.birthDate && personBinding.birthDate.value &&
+                personBinding.person && personBinding.person.value) {
+                
+                sessionList.push({ person: personBinding, category: category });
+                console.log(`[STREAM_QUEUE] Appended streamed candidate #${sessionList.length}: ${personBinding.personLabel.value} (${category.gender}-${category.status})`);
+                
+                // Update visual thin horizontal progress bar
+                const progressPercentage = (sessionList.length / settings.sessionPeople) * 100;
+                updateProgressBar(progressPercentage, false);
+
+                // If this is the FIRST person loaded under this session, render them to the screen IMMEDIATELY
+                if (!currentPerson && sessionList.length === 1) {
+                    const firstEntry = sessionList.shift();
+                    console.log(`[STREAM_QUEUE_FIRST_ENTRY] Rendering first candidate instantly on screen: ${firstEntry.person.personLabel.value}`);
+                    
+                    hasChecked = false;
+                    await loadPersonFromData(firstEntry.person, firstEntry.category);
+                    
+                    requestAnimationFrame(() => {
+                        document.getElementById('male-btn').disabled = false;
+                        document.getElementById('female-btn').disabled = false;
+                        document.getElementById('alive-btn').disabled = false;
+                        document.getElementById('dead-btn').disabled = false;
+                        document.getElementById('next-person').style.display = 'none';
+                        document.getElementById('next-photo').disabled = false; 
+                        updateCheckButtonState();
+                        console.log('[STREAM_QUEUE_UI] Screen initialized with first streaming candidate.');
+                    });
+                } else {
+                    // Preload next image if idle and list has targets
+                    if (!isCurrentlyPreloading && !preloadedPersonContainer && sessionList.length > 0) {
+                        startPreloadNextAvailablePerson();
+                    }
+                }
+            } else {
+                console.warn('[STREAM_QUEUE_WARN] fetchPersonData returned invalid details or null bind.');
+            }
+        } catch (error) {
+            console.error(`[STREAM_QUEUE_ERROR] Fetch error details: ${error.message}`);
+        } finally {
+            activePromisesCount--;
+            // Recursively execute the next queue item
+            launchNextFetch();
+        }
+    }
+
+    // Launch 2 background workers in parallel
+    launchNextFetch();
+    launchNextFetch();
 }
 
 async function loadNextPerson(triggerButton = 'unknown') {
@@ -1552,9 +1582,37 @@ async function loadNextPerson(triggerButton = 'unknown') {
     }
 
     if (sessionList.length === 0) {
-        console.log('[LOAD_NEXT_PERSON] Session list is empty, loading new session.');
-        await loadSession(); 
-        return; 
+        if (isStreamingActive) {
+            console.log('[LOAD_NEXT_PERSON] Session list is empty but background streaming is still active. Showing spinner and waiting for stream item...');
+            const circularProgressContainer = document.getElementById('circular-progress-container');
+            if (circularProgressContainer) {
+                circularProgressContainer.classList.remove('hidden');
+                updateProgressBar(50, true);
+            }
+
+            let checkCount = 0;
+            while (sessionList.length === 0 && isStreamingActive && checkCount < 30) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                checkCount++;
+                console.log(`[LOAD_NEXT_PERSON_POLL] Polling for next person from stream queue (attempt ${checkCount}/30)...`);
+            }
+
+            if (circularProgressContainer) {
+                circularProgressContainer.classList.add('hidden');
+            }
+
+            if (sessionList.length === 0) {
+                console.warn('[LOAD_NEXT_PERSON_TIMEOUT] Timed out waiting for streaming item. Initiating a fresh session load.');
+                await loadSession();
+                return;
+            } else {
+                console.log('[LOAD_NEXT_PERSON] Successfully received next person from background streaming queue!');
+            }
+        } else {
+            console.log('[LOAD_NEXT_PERSON] Session list is empty and streaming is inactive. Loading new session.');
+            await loadSession(); 
+            return; 
+        }
     }
 
     userGenderGuess = null;
