@@ -6,11 +6,11 @@ import { defineConfig, loadEnv } from 'vite';
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     const pkgPath = path.resolve(__dirname, 'package.json');
-    let version = '1.4.0';
+    let version = '1.4.1';
     try {
         if (fs.existsSync(pkgPath)) {
             const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
-            version = pkg.version || '1.4.0';
+            version = pkg.version || '1.4.1';
         }
     } catch (e) {
         console.error('Error reading package.json version:', e);

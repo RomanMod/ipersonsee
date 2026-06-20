@@ -221,7 +221,7 @@ const translations = {
         clearLogs: 'Очистити логи',
         runDiagnostics: 'Запустити діагностику',
         copyLogs: 'Копіювати логи',
-        appVersion: 'Версія v1.4.0'
+        appVersion: 'Версія v1.4.1'
     },
     ru: {
         themeNight: '🌙 Ночь',
@@ -253,7 +253,7 @@ const translations = {
         clearLogs: 'Очистить логи',
         runDiagnostics: 'Запустить диагностику',
         copyLogs: 'Копировать логи',
-        appVersion: 'Версия v1.4.0'
+        appVersion: 'Версия v1.4.1'
     },
     en: {
         themeNight: '🌙 Night',
@@ -285,7 +285,7 @@ const translations = {
         clearLogs: 'Clear Logs',
         runDiagnostics: 'Run Diagnostics',
         copyLogs: 'Copy Logs',
-        appVersion: 'Version v1.4.0'
+        appVersion: 'Version v1.4.1'
     },
     alien: {
         themeNight: '🌙 ⊸⍟⊸',
@@ -317,7 +317,7 @@ const translations = {
         clearLogs: '⊸⍟⊸ ⊸⍟⊸',
         runDiagnostics: '⊸⍟⊸',
         copyLogs: '⊸⍟⊸',
-        appVersion: '⊸⍟⊸ v1.4.0'
+        appVersion: '⊸⍟⊸ v1.4.1'
     }
 };
 
@@ -486,7 +486,7 @@ function updateLanguage() {
     // Translate version badge dynamically using __APP_VERSION__ injected by Vite
     const versionBadge = document.getElementById('app-version-badge');
     if (versionBadge) {
-        let currentVersion = '1.4.0';
+        let currentVersion = '1.4.1';
         try {
             if (typeof __APP_VERSION__ !== 'undefined') {
                 currentVersion = __APP_VERSION__;
