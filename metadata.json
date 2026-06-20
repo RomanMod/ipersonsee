@@ -1,0 +1,9 @@
+{
+  "name": "Remix: personseei_033_01",
+  "description": "A guessing game where players try to identify the gender and life status of random historical or notable figures from Wikidata.",
+  "requestFramePermissions": [],
+  "prompt": "",
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

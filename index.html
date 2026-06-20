@@ -1,0 +1,126 @@
+
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Гра: Випадкова людина з Wikidata</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="origin">
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-WDPB825TVX"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-WDPB825TVX');
+    </script>
+    <!-- End Google Analytics -->
+    
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="index.css">
+<link rel="stylesheet" href="/index.css">
+</head>
+<body class="night">
+    <div class="settings">
+        <button id="theme-toggle" aria-label="Переключити тему">🌙 Ніч</button>
+        <div class="custom-select" id="language-select">
+            <div class="selected-option">Українська</div>
+            <ul class="options" style="display: none;">
+                <li data-value="uk">Українська</li>
+                <li data-value="ru">Русский</li>
+                <li data-value="en">English</li>
+                <li data-value="alien">👽 ⊸⍟⊸</li>
+            </ul>
+        </div>
+        <div class="custom-select" id="mode-select">
+            <div class="selected-option">Відкритий</div>
+            <ul class="options" style="display: none;">
+                <li data-value="open">Відкритий</li>
+                <li data-value="closed">Закритий</li>
+            </ul>
+        </div>
+    </div>
+
+    <button id="next-photo">🔄 Знайти нове фото</button>
+    <div id="main-display">
+        <img id="person-image" src="placeholder.jpg" alt="Зображення людини">
+        <div id="overlay" class="overlay hidden"></div>
+        <div id="progress-bar"></div>
+        <div id="circular-progress-container" class="hidden" aria-label="Loading progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <svg id="circular-progress-svg" viewBox="0 0 36 36">
+                <path class="circular-progress-bg"
+                    d="M18 2.0845
+                      a 15.9155 15.9155 0 0 1 0 31.831
+                      a 15.9155 15.9155 0 0 1 0 -31.831"
+                />
+                <path id="circular-progress-bar" class="circular-progress-bar"
+                    stroke-dasharray="100, 100" 
+                    d="M18 2.0845
+                      a 15.9155 15.9155 0 0 1 0 31.831
+                      a 15.9155 15.9155 0 0 1 0 -31.831"
+                />
+                <text id="circular-progress-text" x="18" y="20.35" class="circular-progress-text">0%</text>
+            </svg>
+        </div>
+    </div>
+    <div id="new-game-over-location" class="new-game-container" style="display: none; margin-top: 20px; margin-bottom: 20px;">
+        <!-- The #new-game button will be moved here when game is over -->
+    </div>
+    <div id="person-info" style="display: none;">
+        <div id="person-details"></div>
+    </div>
+    <div class="gender-buttons">
+        <button id="male-btn" aria-label="Вгадати чоловіка">Чоловік</button>
+        <button id="female-btn" aria-label="Вгадати жінку">Жінка</button>
+    </div>
+    <div class="status-buttons">
+        <button id="alive-btn" aria-label="Вгадати живого">Живий</button>
+        <button id="dead-btn" aria-label="Вгадати померлого">Померлий</button>
+    </div>
+    <div class="check-button">
+        <button id="check-btn" disabled>Перевірити</button>
+    </div>
+    <div class="next-person-container">
+        <button id="next-person" style="display: none;">Наступне фото</button>
+    </div>
+    
+    <div id="game-stats">
+        <div><span id="stats-player-info"></span></div> 
+        <div><span id="stats-attempts-label">Спроби</span>: <span id="stats-attempts">0/10</span></div>
+        <div><span id="stats-success-label">Успішні</span>: <span id="stats-success">0</span></div>
+        <div><span id="stats-failure-label">Невдалі</span>: <span id="stats-failure">0</span></div>
+        <div><span id="stats-success-rate-label">Відсоток успішних</span>: <span id="stats-success-rate">0%</span></div>
+        <div>
+            <div id="stats-guess-history-label">Історія</div>
+            <div id="stats-guess-history" style="text-align: center;">
+                <div id="stats-guess-history-icons">--</div>
+                <div id="stats-guess-history-durations">--</div>
+            </div>
+        </div>
+    </div>
+    <div class="new-game-container" id="new-game-initial-location">
+        <button id="new-game">Нова гра</button>
+    </div>
+    <div id="progress"></div>
+
+    <!-- Diagnostics / Debug Panel for QA / Testing -->
+    <div id="diagnostics-panel" class="diagnostics-panel">
+        <details>
+            <summary id="diag-summary-label">📊 Діагностика & Логи</summary>
+            <div class="diag-content">
+                <div class="diag-buttons">
+                    <button id="clear-logs-btn" class="diag-btn">Очистити логи</button>
+                    <button id="run-diag-btn" class="diag-btn">Запустити діагностику</button>
+                    <button id="copy-logs-btn" class="diag-btn">Копіювати логи</button>
+                </div>
+                <pre id="debug-log-output">Initializing diagnostics log...</pre>
+            </div>
+        </details>
+    </div>
+
+    <script src="index.js"></script>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>

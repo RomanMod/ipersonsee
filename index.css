@@ -1,0 +1,540 @@
+
+:root {
+    --bg-color: #1C2526;
+    --text-color: #E8ECEF;
+    --button-bg: #2C3E50;
+    --button-hover: #34495E;
+    --button-text: #E8ECEF;
+    --accent-color: #3498DB;
+    --progress-bar-bg: #2C3E50;
+    --progress-bar-fill: #3498DB;
+    --circular-progress-bg-color: #4a6074; /* Slightly lighter than button-bg */
+    --circular-progress-bar-color: var(--accent-color);
+    --circular-progress-text-color: var(--text-color);
+    font-size: 18px; /* Централізоване налаштування базового розміру шрифту */
+}
+
+body.day {
+    --bg-color: #ECF0F1;
+    --text-color: #2C3E50;
+    --button-bg: #BDC3C7;
+    --button-hover: #95A5A6;
+    --button-text: #2C3E50;
+    --accent-color: #2980B9;
+    --progress-bar-bg: #BDC3C7;
+    --progress-bar-fill: #2980B9;
+    --circular-progress-bg-color: #d2d8db; /* Slightly lighter than day button-bg */
+    --circular-progress-bar-color: var(--accent-color);
+    --circular-progress-text-color: var(--text-color);
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    text-align: center;
+    padding: 40px;
+    margin: 0;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    font-size: 1rem; /* Базовий шрифт тепер 18px */
+}
+
+.no-transition {
+    transition: none !important;
+}
+
+h1 {
+    font-size: 1.5rem; /* ~27px */
+    margin-bottom: 20px;
+}
+
+#main-display {
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto 20px;
+    aspect-ratio: 4 / 3;
+    background-color: var(--progress-bar-bg);
+    border: 2px solid var(--button-bg);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+#person-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    opacity: 0;
+    transition: opacity 0.5s ease-in;
+}
+
+#person-image.loaded {
+    opacity: 1;
+}
+
+#overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #000;
+    z-index: 10;
+    transition: opacity 0.5s ease;
+}
+
+#overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+#progress-bar { /* Horizontal bar for session loading */
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0%;
+    height: 5px;
+    background-color: var(--progress-bar-fill);
+    transition: width 0.3s ease;
+    z-index: 20; /* Ensure it's above the image, below circular progress if they overlap vertically */
+}
+
+#progress-bar.hidden {
+    display: none;
+}
+
+/* Circular Progress Styles */
+#circular-progress-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80px; /* Adjust size as needed */
+    height: 80px;
+    z-index: 15;
+    transition: opacity 0.3s ease;
+    animation: fadeIn 0.3s ease;
+}
+
+#circular-progress-container.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+#circular-progress-svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg); /* Start from the top */
+}
+
+.circular-progress-bg {
+    fill: none;
+    stroke: var(--circular-progress-bg-color);
+    stroke-width: 3.5; /* Adjust thickness */
+}
+
+.circular-progress-bar {
+    fill: none;
+    stroke: var(--circular-progress-bar-color);
+    stroke-width: 3.5; /* Adjust thickness */
+    stroke-linecap: round; /* Rounded ends */
+    transition: stroke-dashoffset 0.2s ease-out;
+}
+
+.circular-progress-text {
+    font-family: Arial, sans-serif;
+    font-size: 0.7rem; /* ~12.6px */
+    font-weight: bold;
+    fill: var(--circular-progress-text-color);
+    text-anchor: middle;
+    dominant-baseline: middle;
+    transform: rotate(90deg); /* Counter-rotate text */
+    transform-origin: 18px 18px; /* Center of the viewBox */
+    display: none; /* Hide the percentage text */
+}
+
+#person-image.loaded + #circular-progress-container { /* Hide when image is loaded */
+    opacity: 0;
+    pointer-events: none;
+}
+
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+#next-photo {
+    padding: 10px 20px;
+    font-size: 1rem; /* 18px */
+    background-color: var(--button-bg);
+    color: var(--button-text);
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    margin-bottom: 10px;
+}
+
+#next-photo:hover {
+    background-color: var(--button-hover);
+}
+
+.settings {
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    align-items: stretch; /* Ensure items stretch to the same height */
+}
+
+/* Make direct children of .settings (button and .custom-select) share space equally */
+.settings > * {
+    flex: 1; /* Distribute space equally */
+    box-sizing: border-box; /* Consistent box model */
+}
+
+.settings button { /* Affects #theme-toggle */
+    padding: 10px 20px;
+    font-size: 1rem; /* 18px */
+    background-color: var(--button-bg);
+    color: var(--button-text);
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    min-width: 140px; /* Base minimum width */
+    text-align: center; /* Explicitly center text */
+}
+
+.settings button:hover {
+    background-color: var(--button-hover);
+}
+
+.custom-select { /* Affects #language-select and #mode-select containers */
+    position: relative;
+    min-width: 140px; /* Base minimum width, works with flex:1 */
+    display: flex; /* To allow .selected-option to fill height if needed */
+}
+
+.selected-option { /* The visible part of the custom select */
+    width: 100%; /* Fill the width of .custom-select parent */
+    padding: 10px 20px;
+    font-size: 1rem; /* 18px */
+    background-color: var(--button-bg);
+    color: var(--button-text);
+    border: none; /* Consistent with button style */
+    border-radius: 5px;
+    cursor: pointer;
+    text-align: center; /* Consistent with button style */
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    box-sizing: border-box; /* Consistent box model */
+    display: flex; /* For vertical centering of text if needed, and height consistency */
+    align-items: center; /* Vertically center text */
+    justify-content: center; /* Horizontally center text (redundant with text-align: center but good for flex context) */
+}
+
+.selected-option:hover {
+    background-color: var(--button-hover);
+}
+
+.options {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: var(--button-bg);
+    border: 1px solid var(--button-bg);
+    border-radius: 5px;
+    margin-top: 5px;
+    z-index: 100;
+    list-style: none;
+    padding: 0;
+}
+
+.options li {
+    padding: 10px 20px;
+    color: var(--button-text);
+    cursor: pointer;
+    white-space: nowrap;
+    font-size: 1rem; /* 18px */
+    text-align: center; /* Consistent text alignment */
+}
+
+.options li:hover {
+    background-color: var(--button-hover);
+}
+
+.gender-buttons, .status-buttons {
+    display: none; /* Приховані за замовчуванням */
+    justify-content: center;
+    gap: 10px;
+    margin: 10px 0;
+}
+
+.gender-buttons button, .status-buttons button {
+    padding: 15px 40px;
+    font-size: 1rem; /* 18px (було 20px) */
+    background-color: var(--button-bg);
+    color: var(--button-text);
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.gender-buttons button:hover, .status-buttons button:hover {
+    background-color: var(--button-hover);
+}
+
+.gender-buttons button.active, .status-buttons button.active {
+    background-color: var(--accent-color);
+}
+
+.gender-buttons button:disabled, .status-buttons button:disabled {
+    background-color: var(--button-bg);
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.check-button {
+    display: flex;
+    justify-content: center;
+    margin: 10px 0;
+}
+
+#check-btn {
+    padding: 15px 40px;
+    font-size: 1rem; /* 18px (було 20px) */
+    background-color: var(--button-bg);
+    color: var(--button-text);
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s, opacity 0.2s;
+}
+
+#check-btn:hover {
+    background-color: var(--button-hover);
+}
+
+#check-btn:disabled {
+    background-color: var(--button-bg);
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+#person-info {
+    background-color: var(--button-bg);
+    padding: 10px;
+    border-radius: 5px;
+    margin: 10px auto; /* Changed from 10px 0 for centering */
+    transition: border-color 0.3s ease, border-width 0.3s ease;
+    font-size: 1rem;
+    border: 2px solid transparent;
+    max-width: 400px; /* Added to match #main-display max-width */
+    box-sizing: border-box; /* Ensures padding and border are included in max-width */
+    word-wrap: break-word; /* Allows long text to wrap */
+    text-align: center; /* Centers the text content */
+}
+
+#person-info.correct {
+    border-color: green;
+}
+
+#person-info.incorrect {
+    border-color: red;
+}
+
+.next-person-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 10px;
+}
+
+#next-person {
+    padding: 10px 20px;
+    font-size: 1rem; /* 18px (було 16px) */
+    background-color: var(--button-bg);
+    color: var(--button-text);
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+#next-person:hover {
+    background-color: var(--button-hover);
+}
+
+#game-stats {
+    margin-top: 20px;
+    font-size: 1rem; /* ~18px (було 1.1em, що було ~16.5px якщо body 15px) */
+    background-color: var(--button-bg);
+    padding: 15px;
+    border-radius: 5px;
+    display: inline-block;
+    transition: background-color 0.3s ease;
+}
+
+#game-stats div {
+    margin: 5px 0;
+}
+
+#game-stats span {
+    font-weight: bold;
+    color: var(--text-color); /* Changed from var(--accent-color) */
+}
+
+.new-game-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 15px; /* Добавлен отступ сверху для визуального разделения */
+    margin-bottom: 15px;
+}
+
+#new-game {
+    padding: 15px 40px;
+    font-size: 1rem; /* 18px (було 20px) */
+    font-weight: bold;
+    background-color: var(--button-bg);
+    color: var(--button-text);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.2s;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+#new-game:hover {
+    background-color: var(--button-hover);
+    transform: scale(1.05);
+}
+
+
+
+@media (max-width: 900px) {
+    #main-display {
+        max-width: 350px;
+    }
+    /* Adjust #person-info max-width if #main-display changes */
+    #person-info {
+        max-width: 350px;
+    }
+}
+
+@media (max-width: 600px) {
+    /* Apply reduced min-width to both button and custom-select containers directly */
+    .settings button,
+    .custom-select {
+        min-width: 110px;
+    }
+
+    .settings button { /* Style adjustments for the button itself */
+        padding: 8px 12px;
+        font-size: 0.8rem; /* ~14.4px */
+    }
+
+    .custom-select .selected-option { /* Style adjustments for the visible part of select */
+        padding: 8px 12px;
+        font-size: 0.8rem; /* ~14.4px */
+    }
+
+    .options li {
+        padding: 8px 12px;
+        font-size: 0.8rem; /* ~14.4px */
+    }
+
+    #circular-progress-container {
+        width: 60px;
+        height: 60px;
+    }
+    .circular-progress-text {
+        font-size: 0.6rem; /* ~10.8px */
+    }
+    #new-game {
+        padding: 12px 30px;
+        font-size: 0.9rem; /* ~16.2px */
+    }
+}
+
+/* Diagnostics & Logs Styles */
+.diagnostics-panel {
+    margin: 25px auto;
+    max-width: 440px;
+    background-color: var(--button-bg);
+    border: 2px solid var(--button-bg);
+    border-radius: 8px;
+    padding: 12px;
+    text-align: left;
+    box-sizing: border-box;
+    font-size: 0.9rem;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.diagnostics-panel details {
+    width: 100%;
+}
+
+.diagnostics-panel summary {
+    cursor: pointer;
+    font-weight: bold;
+    padding: 4px;
+    color: var(--text-color);
+    outline: none;
+    user-select: none;
+    font-family: Arial, sans-serif;
+}
+
+.diag-content {
+    margin-top: 10px;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    padding: 10px;
+}
+
+.diag-buttons {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+}
+
+.diag-btn {
+    padding: 6px 12px;
+    font-size: 0.75rem;
+    background-color: var(--button-hover);
+    color: var(--button-text);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+.diag-btn:hover {
+    background-color: var(--accent-color);
+    transform: translateY(-1px);
+}
+
+.diag-btn:active {
+    transform: translateY(0);
+}
+
+#debug-log-output {
+    max-height: 200px;
+    overflow-y: auto;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.75rem;
+    white-space: pre-wrap;
+    word-break: break-all;
+    margin: 0;
+    padding: 5px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-color);
+    text-align: left;
+}
+
