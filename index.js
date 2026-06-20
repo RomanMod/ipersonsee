@@ -51,6 +51,14 @@ window.addEventListener('unhandledrejection', (event) => {
 function runSystemDiagnostics() {
     console.log('--- RUNNING DIAGNOSTICS ---');
     console.log(`[DIAG] Current Local Time: ${new Date().toString()}`);
+    try {
+        if (typeof __APP_VERSION__ !== 'undefined') {
+            console.log(`[DIAG] Build App Version: v${__APP_VERSION__}`);
+        }
+        if (typeof __BUILD_TIME__ !== 'undefined') {
+            console.log(`[DIAG] Build Completion Time: ${__BUILD_TIME__}`);
+        }
+    } catch (e) {}
     console.log(`[DIAG] User Agent: ${navigator.userAgent}`);
     console.log(`[DIAG] Platform (Navigator): ${navigator.platform}`);
     
@@ -475,10 +483,23 @@ function updateLanguage() {
     const copyLogsBtn = document.getElementById('copy-logs-btn');
     if (copyLogsBtn) copyLogsBtn.textContent = texts.copyLogs || 'Копіювати логи';
 
-    // Translate version badge
+    // Translate version badge dynamically using __APP_VERSION__ injected by Vite
     const versionBadge = document.getElementById('app-version-badge');
     if (versionBadge) {
-        versionBadge.textContent = texts.appVersion || 'v1.4.0';
+        let currentVersion = '1.4.0';
+        try {
+            if (typeof __APP_VERSION__ !== 'undefined') {
+                currentVersion = __APP_VERSION__;
+            }
+        } catch (e) {}
+        
+        let prefix = 'v';
+        if (selectedLanguage === 'uk') prefix = 'Версія v';
+        else if (selectedLanguage === 'ru') prefix = 'Версия v';
+        else if (selectedLanguage === 'en') prefix = 'Version v';
+        else if (selectedLanguage === 'alien') prefix = '⊸⍟⊸ v';
+        
+        versionBadge.textContent = `${prefix}${currentVersion}`;
     }
 
     updateUI(currentPerson); 
