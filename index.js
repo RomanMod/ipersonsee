@@ -914,6 +914,7 @@ async function loadImageWithFallback(url, element) {
 }
 
 const WIKIDATA_QUERY_TIMEOUT_MS = 120000; 
+let sparqlQueuePromise = Promise.resolve();
 
 async function fetchPersonData(useRandom = false, category = null) {
     const start = performance.now();
@@ -935,116 +936,128 @@ async function fetchPersonData(useRandom = false, category = null) {
             delete wikidataCache[cacheKey]; 
         }
     }
+
     console.log(`[WIKIDATA_FETCH] No valid cache hit for ${cacheKey}, querying Wikidata.`);
 
-    const genderFilter = category?.gender === 'male' ? 'FILTER(?gender = wd:Q6581097)' :
-                        category?.gender === 'female' ? 'FILTER(?gender = wd:Q6581072)' :
-                        'FILTER(?gender IN (wd:Q6581097, wd:Q6581072))';
-    const statusFilter = category?.status === 'alive' ? 'FILTER NOT EXISTS { ?person wdt:P570 ?deathDate }' :
-                        category?.status === 'deceased' ? '?person wdt:P570 ?deathDate' :
-                        'OPTIONAL { ?person wdt:P570 ?deathDate }';
-    const birthDateFilter = `FILTER(?birthDate >= "${settings.birthYearFilter}-01-01T00:00:00Z"^^xsd:dateTime).`;
-    const countryFilter = settings.selectedCountries === 'all' ? '' :
-                         `FILTER(?country IN (${settings.selectedCountries
-                             .map(code => `wd:${settings.countryMap[code]}`)
-                             .filter(id => id)
-                             .join(', ')})).`;
+    const currentPromise = sparqlQueuePromise;
+    let resolveQueue;
+    sparqlQueuePromise = new Promise(resolve => { resolveQueue = resolve; });
+    
+    try {
+        await currentPromise;
+    } catch (err) {}
 
-    while (attempts < maxQueryAttempts) {
-        attempts++;
-        const offset = settings.dynamicOffset ? Math.floor(Math.random() * settings.maxOffset) : 0;
-        query = `
-            SELECT ?person ?personLabel ?image ?country ?gender ?deathDate ?birthDate
-            WHERE {
-                ?person wdt:P31 wd:Q5;
-                        wdt:P18 ?image;
-                        wdt:P21 ?gender;
-                        wdt:P569 ?birthDate.
-                ${settings.strictCountryFilter ? '' : 'OPTIONAL'} { ?person wdt:P27 ?country }.
-                ${genderFilter}
-                ${statusFilter}
-                ${birthDateFilter}
-                ${settings.selectedCountries !== 'all' && settings.strictCountryFilter ? countryFilter : ''}
-                ?person rdfs:label ?personLabel.
-                FILTER (LANG(?personLabel) = "en").
-            }
-            OFFSET ${offset}
-            LIMIT ${settings.maxPeople}
-        `;
+    try {
+        const genderFilter = category?.gender === 'male' ? 'FILTER(?gender = wd:Q6581097)' :
+                            category?.gender === 'female' ? 'FILTER(?gender = wd:Q6581072)' :
+                            'FILTER(?gender IN (wd:Q6581097, wd:Q6581072))';
+        const statusFilter = category?.status === 'alive' ? 'FILTER NOT EXISTS { ?person wdt:P570 ?deathDate }' :
+                            category?.status === 'deceased' ? '?person wdt:P570 ?deathDate' :
+                            'OPTIONAL { ?person wdt:P570 ?deathDate }';
+        const birthDateFilter = `FILTER(?birthDate >= "${settings.birthYearFilter}-01-01T00:00:00Z"^^xsd:dateTime).`;
+        const countryFilter = settings.selectedCountries === 'all' ? '' :
+                             `FILTER(?country IN (${settings.selectedCountries
+                                 .map(code => `wd:${settings.countryMap[code]}`)
+                                 .filter(id => id)
+                                 .join(', ')})).`;
 
-        const endpoint = 'https://query.wikidata.org/sparql';
-        const url = `${endpoint}?query=${encodeURIComponent(query)}&format=json&nocache=${Date.now()}`;
+        while (attempts < maxQueryAttempts) {
+            attempts++;
+            const offset = settings.dynamicOffset ? Math.floor(Math.random() * settings.maxOffset) : 0;
+            query = `
+                SELECT ?person ?personLabel ?image ?country ?gender ?deathDate ?birthDate
+                WHERE {
+                    ?person wdt:P31 wd:Q5;
+                            wdt:P18 ?image;
+                            wdt:P21 ?gender;
+                            wdt:P569 ?birthDate.
+                    ${settings.strictCountryFilter ? '' : 'OPTIONAL'} { ?person wdt:P27 ?country }.
+                    ${genderFilter}
+                    ${statusFilter}
+                    ${birthDateFilter}
+                    ${settings.selectedCountries !== 'all' && settings.strictCountryFilter ? countryFilter : ''}
+                    ?person rdfs:label ?personLabel.
+                    FILTER (LANG(?personLabel) = "en").
+                }
+                OFFSET ${offset}
+                LIMIT ${settings.maxPeople}
+            `;
 
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => {
-            console.warn(`[WIKIDATA_QUERY_TIMEOUT_EVENT] Wikidata query attempt ${attempts}/${maxQueryAttempts} for category ${categoryKey} is taking too long and will be aborted.`);
-            controller.abort();
-        }, WIKIDATA_QUERY_TIMEOUT_MS);
+            const endpoint = 'https://query.wikidata.org/sparql';
+            const url = `${endpoint}?query=${encodeURIComponent(query)}&format=json&nocache=${Date.now()}`;
 
-        try {
-            const response = await fetch(url, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/sparql-results+json',
-                    'User-Agent': 'SimplePhotoApp/1.0 (https://romanmod.github.io/personseei/; krv.mod@gmail.com)',
-                },
-                signal: controller.signal
-            });
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => {
+                console.warn(`[WIKIDATA_QUERY_TIMEOUT_EVENT] Wikidata query attempt ${attempts}/${maxQueryAttempts} for category ${categoryKey} is taking too long and will be aborted.`);
+                controller.abort();
+            }, WIKIDATA_QUERY_TIMEOUT_MS);
 
-            clearTimeout(timeoutId);
-            if (!response.ok) throw new Error(`Wikidata API error: ${response.status} ${response.statusText}`);
-            const data = await response.json();
-            const list = data.results && data.results.bindings; 
-            const duration = (performance.now() - start).toFixed(0);
-            
-            if (!list || !list.length) { 
-                console.warn(`[WIKIDATA_QUERY_WARN] No results or invalid list for category ${categoryKey}, attempt ${attempts}/${maxQueryAttempts}. Response:`, data);
-                if (attempts === maxQueryAttempts) throw new Error(`No person found for category ${categoryKey} after ${maxQueryAttempts} query attempts with different offsets.`);
-                continue; 
-            }
-            console.log(`[WIKIDATA_QUERY_SUCCESS] Attempt ${attempts}/${maxQueryAttempts} successful for category ${categoryKey}. Found ${list.length} results. Time: ${duration}ms`);
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/sparql-results+json'
+                    },
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutId);
+                if (!response.ok) throw new Error(`Wikidata API error: ${response.status} ${response.statusText}`);
+                const data = await response.json();
+                const list = data.results && data.results.bindings; 
+                const duration = (performance.now() - start).toFixed(0);
+                
+                if (!list || !list.length) { 
+                    console.warn(`[WIKIDATA_QUERY_WARN] No results or invalid list for category ${categoryKey}, attempt ${attempts}/${maxQueryAttempts}. Response:`, data);
+                    if (attempts === maxQueryAttempts) throw new Error(`No person found for category ${categoryKey} after ${maxQueryAttempts} query attempts with different offsets.`);
+                    continue; 
+                }
+                console.log(`[WIKIDATA_QUERY_SUCCESS] Attempt ${attempts}/${maxQueryAttempts} successful for category ${categoryKey}. Found ${list.length} results. Time: ${duration}ms`);
 
 
-            wikidataCache[cacheKey] = (wikidataCache[cacheKey] || []).concat(list).slice(-100); 
-            localStorage.setItem('wikidataCache', JSON.stringify(wikidataCache));
-            console.log('[CACHE_UPDATE] wikidataCache updated in localStorage.');
+                wikidataCache[cacheKey] = (wikidataCache[cacheKey] || []).concat(list).slice(-100); 
+                localStorage.setItem('wikidataCache', JSON.stringify(wikidataCache));
+                console.log('[CACHE_UPDATE] wikidataCache updated in localStorage.');
 
-            const randomPerson = list[Math.floor(Math.random() * list.length)];
-            if (randomPerson && randomPerson.personLabel && randomPerson.personLabel.value && randomPerson.image && randomPerson.image.value && randomPerson.gender && randomPerson.birthDate && randomPerson.person && randomPerson.person.value) {
-                return randomPerson;
-            } else {
-                 console.warn(`[WIKIDATA_QUERY_WARN] Randomly selected person is invalid, attempt ${attempts}/${maxQueryAttempts}. Person:`, randomPerson);
-                 if (attempts === maxQueryAttempts) throw new Error(`Selected invalid person on final attempt for category ${categoryKey}.`);
-                 continue; 
-            }
-
-        } catch (error) {
-            clearTimeout(timeoutId);
-            const isTimeoutAbort = error.name === 'AbortError';
-
-            if (isTimeoutAbort) {
-            } else {
-                if (error.message && error.message.includes('Failed to fetch')) {
-                    console.warn(`[WIKIDATA_QUERY_WARN] Query attempt ${attempts}/${maxQueryAttempts} for category ${categoryKey} failed with fetch issue. Retrying. Error: ${error.message}`);
+                const randomPerson = list[Math.floor(Math.random() * list.length)];
+                if (randomPerson && randomPerson.personLabel && randomPerson.personLabel.value && randomPerson.image && randomPerson.image.value && randomPerson.gender && randomPerson.birthDate && randomPerson.person && randomPerson.person.value) {
+                    return randomPerson;
                 } else {
-                    console.error(`[WIKIDATA_QUERY_ERROR] Query attempt ${attempts}/${maxQueryAttempts} for category ${categoryKey} failed. Retrying. Error: ${error.message}`);
+                     console.warn(`[WIKIDATA_QUERY_WARN] Randomly selected person is invalid, attempt ${attempts}/${maxQueryAttempts}. Person:`, randomPerson);
+                     if (attempts === maxQueryAttempts) throw new Error(`Selected invalid person on final attempt for category ${categoryKey}.`);
+                     continue; 
                 }
-            }
 
-            if (isTimeoutAbort || attempts >= maxQueryAttempts) {
-                let rethrowMessage;
+            } catch (error) {
+                clearTimeout(timeoutId);
+                const isTimeoutAbort = error.name === 'AbortError';
+
                 if (isTimeoutAbort) {
-                    rethrowMessage = `Wikidata query for person data (category: ${categoryKey}) timed out on attempt ${attempts}/${maxQueryAttempts}.`;
-                } else { 
-                    rethrowMessage = `Failed to fetch person data (category: ${categoryKey}) after ${maxQueryAttempts} attempts. Last error on attempt ${attempts}: ${error.message}`;
+                } else {
+                    if (error.message && error.message.includes('Failed to fetch')) {
+                        console.warn(`[WIKIDATA_QUERY_WARN] Query attempt ${attempts}/${maxQueryAttempts} for category ${categoryKey} failed with fetch issue. Retrying. Error: ${error.message}`);
+                    } else {
+                        console.error(`[WIKIDATA_QUERY_ERROR] Query attempt ${attempts}/${maxQueryAttempts} for category ${categoryKey} failed. Retrying. Error: ${error.message}`);
+                    }
                 }
-                console.error(`[WIKIDATA_FETCH_FINAL_ERROR] ${rethrowMessage}`);
-                throw new Error(rethrowMessage);
+
+                if (isTimeoutAbort || attempts >= maxQueryAttempts) {
+                    let rethrowMessage;
+                    if (isTimeoutAbort) {
+                        rethrowMessage = `Wikidata query for person data (category: ${categoryKey}) timed out on attempt ${attempts}/${maxQueryAttempts}.`;
+                    } else { 
+                        rethrowMessage = `Failed to fetch person data (category: ${categoryKey}) after ${maxQueryAttempts} attempts. Last error on attempt ${attempts}: ${error.message}`;
+                    }
+                    console.error(`[WIKIDATA_FETCH_FINAL_ERROR] ${rethrowMessage}`);
+                    throw new Error(rethrowMessage);
+                }
+                console.log(`[WIKIDATA_FETCH_RETRY] Retrying query for ${categoryKey}, attempt ${attempts + 1}/${maxQueryAttempts}...`);
             }
-            console.log(`[WIKIDATA_FETCH_RETRY] Retrying query for ${categoryKey}, attempt ${attempts + 1}/${maxQueryAttempts}...`);
         }
+        throw new Error(`Failed to fetch person data for category ${categoryKey} after ${maxQueryAttempts} attempts (unexpected exit).`);
+    } finally {
+        resolveQueue();
     }
-    throw new Error(`Failed to fetch person data for category ${categoryKey} after ${maxQueryAttempts} attempts (unexpected exit).`);
 }
 
 async function startPreloadNextAvailablePerson() {
