@@ -212,7 +212,8 @@ const translations = {
         diagnosticsTitle: '📊 Діагностика & Логи',
         clearLogs: 'Очистити логи',
         runDiagnostics: 'Запустити діагностику',
-        copyLogs: 'Копіювати логи'
+        copyLogs: 'Копіювати логи',
+        appVersion: 'Версія v1.3.0'
     },
     ru: {
         themeNight: '🌙 Ночь',
@@ -243,7 +244,8 @@ const translations = {
         diagnosticsTitle: '📊 Диагностика & Логи',
         clearLogs: 'Очистить логи',
         runDiagnostics: 'Запустить диагностику',
-        copyLogs: 'Копировать логи'
+        copyLogs: 'Копировать логи',
+        appVersion: 'Версия v1.3.0'
     },
     en: {
         themeNight: '🌙 Night',
@@ -274,7 +276,8 @@ const translations = {
         diagnosticsTitle: '📊 Diagnostics & Logs',
         clearLogs: 'Clear Logs',
         runDiagnostics: 'Run Diagnostics',
-        copyLogs: 'Copy Logs'
+        copyLogs: 'Copy Logs',
+        appVersion: 'Version v1.3.0'
     },
     alien: {
         themeNight: '🌙 ⊸⍟⊸',
@@ -305,7 +308,8 @@ const translations = {
         diagnosticsTitle: '📊 ⊸⍟⊸ & ⊸⍟⊸',
         clearLogs: '⊸⍟⊸ ⊸⍟⊸',
         runDiagnostics: '⊸⍟⊸',
-        copyLogs: '⊸⍟⊸'
+        copyLogs: '⊸⍟⊸',
+        appVersion: '⊸⍟⊸ v1.3.0'
     }
 };
 
@@ -470,6 +474,12 @@ function updateLanguage() {
     if (runDiagnosticsBtn) runDiagnosticsBtn.textContent = texts.runDiagnostics || 'Запустити діагностику';
     const copyLogsBtn = document.getElementById('copy-logs-btn');
     if (copyLogsBtn) copyLogsBtn.textContent = texts.copyLogs || 'Копіювати логи';
+
+    // Translate version badge
+    const versionBadge = document.getElementById('app-version-badge');
+    if (versionBadge) {
+        versionBadge.textContent = texts.appVersion || 'v1.3.0';
+    }
 
     updateUI(currentPerson); 
     updateTelegramUserInfoDisplay(); 
