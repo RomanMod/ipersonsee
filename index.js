@@ -213,7 +213,7 @@ const translations = {
         clearLogs: 'Очистити логи',
         runDiagnostics: 'Запустити діагностику',
         copyLogs: 'Копіювати логи',
-        appVersion: 'Версія v1.3.0'
+        appVersion: 'Версія v1.4.0'
     },
     ru: {
         themeNight: '🌙 Ночь',
@@ -245,7 +245,7 @@ const translations = {
         clearLogs: 'Очистить логи',
         runDiagnostics: 'Запустить диагностику',
         copyLogs: 'Копировать логи',
-        appVersion: 'Версия v1.3.0'
+        appVersion: 'Версия v1.4.0'
     },
     en: {
         themeNight: '🌙 Night',
@@ -277,7 +277,7 @@ const translations = {
         clearLogs: 'Clear Logs',
         runDiagnostics: 'Run Diagnostics',
         copyLogs: 'Copy Logs',
-        appVersion: 'Version v1.3.0'
+        appVersion: 'Version v1.4.0'
     },
     alien: {
         themeNight: '🌙 ⊸⍟⊸',
@@ -309,7 +309,7 @@ const translations = {
         clearLogs: '⊸⍟⊸ ⊸⍟⊸',
         runDiagnostics: '⊸⍟⊸',
         copyLogs: '⊸⍟⊸',
-        appVersion: '⊸⍟⊸ v1.3.0'
+        appVersion: '⊸⍟⊸ v1.4.0'
     }
 };
 
@@ -478,7 +478,7 @@ function updateLanguage() {
     // Translate version badge
     const versionBadge = document.getElementById('app-version-badge');
     if (versionBadge) {
-        versionBadge.textContent = texts.appVersion || 'v1.3.0';
+        versionBadge.textContent = texts.appVersion || 'v1.4.0';
     }
 
     updateUI(currentPerson); 
@@ -1490,6 +1490,8 @@ async function loadSession() {
 
     let targetIndex = 0;
     let activePromisesCount = 0;
+    let loadedCount = 0;
+    let firstPersonRendered = false;
 
     async function launchNextFetch() {
         if (streamId !== currentStreamId) {
@@ -1497,10 +1499,10 @@ async function loadSession() {
             return;
         }
 
-        if (targetIndex >= targets.length || sessionList.length >= settings.sessionPeople) {
+        if (targetIndex >= targets.length || loadedCount >= settings.sessionPeople) {
             if (activePromisesCount === 0) {
                 isStreamingActive = false;
-                console.log(`[STREAM_QUEUE_COMPLETE] Background stream queue finished. Cached or loaded ${sessionList.length} total items in list.`);
+                console.log(`[STREAM_QUEUE_COMPLETE] Background stream queue finished. Cached or loaded ${loadedCount} total items.`);
                 updateProgressBar(100, false);
                 console.log(`[LOAD_SESSION_TIMING] Total stream load elapsed (since launch): ${(performance.now() - startTime).toFixed(0)}ms`);
             }
@@ -1526,14 +1528,16 @@ async function loadSession() {
                 personBinding.person && personBinding.person.value) {
                 
                 sessionList.push({ person: personBinding, category: category });
-                console.log(`[STREAM_QUEUE] Appended streamed candidate #${sessionList.length}: ${personBinding.personLabel.value} (${category.gender}-${category.status})`);
+                loadedCount++;
+                console.log(`[STREAM_QUEUE] Appended streamed candidate #${loadedCount}: ${personBinding.personLabel.value} (${category.gender}-${category.status})`);
                 
-                // Update visual thin horizontal progress bar
-                const progressPercentage = (sessionList.length / settings.sessionPeople) * 100;
+                // Update visual thin horizontal progress bar correctly based on loadedCount
+                const progressPercentage = (loadedCount / settings.sessionPeople) * 100;
                 updateProgressBar(progressPercentage, false);
 
                 // If this is the FIRST person loaded under this session, render them to the screen IMMEDIATELY
-                if (!currentPerson && sessionList.length === 1) {
+                if (!currentPerson && !firstPersonRendered) {
+                    firstPersonRendered = true;
                     const firstEntry = sessionList.shift();
                     console.log(`[STREAM_QUEUE_FIRST_ENTRY] Rendering first candidate instantly on screen: ${firstEntry.person.personLabel.value}`);
                     
@@ -1953,6 +1957,7 @@ document.getElementById('next-person').addEventListener('click', () => {
 
 document.getElementById('new-game').addEventListener('click', () => {
     console.log('[USER_ACTION] "New Game" button clicked.');
+    reportProgressOnLeave('new_game_reset');
     startNewGame();
 });
 
@@ -2164,6 +2169,11 @@ window.onload = () => {
     window.addEventListener('pagehide', () => {
         console.log('[LIFE_CYCLE] pagehide event fired.');
         reportProgressOnLeave('pagehide');
+    });
+
+    window.addEventListener('freeze', () => {
+        console.log('[LIFE_CYCLE] freeze event fired (app suspended).');
+        reportProgressOnLeave('freeze');
     });
 
     console.log('[WINDOW_ONLOAD] Page load sequence finished.');
