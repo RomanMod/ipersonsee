@@ -4,6 +4,18 @@ const originalConsoleWarn = console.warn;
 const originalConsoleError = console.error;
 
 window.appLogs = [];
+try {
+    const savedLogsString = localStorage.getItem('appLogs_persistent');
+    if (savedLogsString) {
+        window.appLogs = JSON.parse(savedLogsString);
+        window.appLogs.push(`[${new Date().toISOString().split('T')[1].slice(0, 11)}] [SYSTEM] --- APPLICATION RESTARTED (PREVIOUS LOGS PRESERVED) ---`);
+        if (window.appLogs.length > 500) {
+            window.appLogs.shift();
+        }
+    }
+} catch (e) {
+    window.appLogs = [];
+}
 
 function captureLog(type, args) {
     const timeStr = new Date().toISOString().split('T')[1].slice(0, 11);
@@ -18,6 +30,10 @@ function captureLog(type, args) {
     if (window.appLogs.length > 500) {
         window.appLogs.shift();
     }
+    
+    try {
+        localStorage.setItem('appLogs_persistent', JSON.stringify(window.appLogs));
+    } catch (e) {}
     
     const debugPre = document.getElementById('debug-log-output');
     if (debugPre) {
@@ -1547,6 +1563,8 @@ async function loadSession() {
         activePromisesCount++;
 
         try {
+            // Defensive delay to prevent browser thread freeze on rapid consecutive cache hits
+            await new Promise(resolve => setTimeout(resolve, 50));
             const personBinding = await fetchPersonData(false, category);
             
             if (streamId !== currentStreamId) {
@@ -1601,8 +1619,10 @@ async function loadSession() {
             console.error(`[STREAM_QUEUE_ERROR] Fetch error details: ${error.message}`);
         } finally {
             activePromisesCount--;
-            // Recursively execute the next queue item
-            launchNextFetch();
+            // Recursively execute the next queue item in the next tick of the event loop to yield to the browser
+            setTimeout(() => {
+                launchNextFetch();
+            }, 10);
         }
     }
 
@@ -1651,6 +1671,7 @@ async function loadNextPerson(triggerButton = 'unknown') {
 
             if (sessionList.length === 0) {
                 console.warn('[LOAD_NEXT_PERSON_TIMEOUT] Timed out waiting for streaming item. Initiating a fresh session load.');
+                currentPerson = null;
                 await loadSession();
                 return;
             } else {
@@ -1658,6 +1679,7 @@ async function loadNextPerson(triggerButton = 'unknown') {
             }
         } else {
             console.log('[LOAD_NEXT_PERSON] Session list is empty and streaming is inactive. Loading new session.');
+            currentPerson = null;
             await loadSession(); 
             return; 
         }
@@ -2032,6 +2054,9 @@ function setupDiagnosticsPanel() {
     if (clearBtn) {
         clearBtn.addEventListener('click', () => {
             window.appLogs = [];
+            try {
+                localStorage.removeItem('appLogs_persistent');
+            } catch (e) {}
             const debugPre = document.getElementById('debug-log-output');
             if (debugPre) {
                 debugPre.textContent = 'Logs cleared.';
