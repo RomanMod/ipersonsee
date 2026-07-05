@@ -139,17 +139,17 @@ body.day .options li {
     box-shadow: 0 0 15px rgba(188, 19, 254, 0.25) !important;
 }
 
-/* Correct / Incorrect overrides for person info box */
-#person-info.correct {
-    border-color: #00F0FF !important;
-    background-color: rgba(0, 240, 255, 0.08) !important;
-    box-shadow: 0 0 20px rgba(0, 240, 255, 0.15) !important;
+/* Correct / Incorrect overrides for person info box with high visibility 2px borders and elegant glow */
+#person-info.correct, body.day #person-info.correct {
+    border: 2px solid #00F0FF !important;
+    background-color: rgba(0, 240, 255, 0.15) !important;
+    box-shadow: 0 0 25px rgba(0, 240, 255, 0.4) !important;
 }
 
-#person-info.incorrect {
-    border-color: #BC13FE !important;
-    background-color: rgba(188, 19, 254, 0.08) !important;
-    box-shadow: 0 0 20px rgba(188, 19, 254, 0.15) !important;
+#person-info.incorrect, body.day #person-info.incorrect {
+    border: 2px solid #BC13FE !important;
+    background-color: rgba(188, 19, 254, 0.15) !important;
+    box-shadow: 0 0 25px rgba(188, 19, 254, 0.4) !important;
 }
 
 /* Slow spin animation for loading refresh icon */

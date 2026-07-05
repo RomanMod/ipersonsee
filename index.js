@@ -244,7 +244,9 @@ const translations = {
         clearLogs: 'Очистити логи',
         runDiagnostics: 'Запустити діагностику',
         copyLogs: 'Копіювати логи',
-        appVersion: 'Версія v1.4.1'
+        appVersion: 'Версія v1.4.1',
+        correctGuess: 'ВІРНО',
+        incorrectGuess: 'НЕВІРНО'
     },
     ru: {
         themeNight: '🌙 Ночь',
@@ -276,7 +278,9 @@ const translations = {
         clearLogs: 'Очистить логи',
         runDiagnostics: 'Запустить диагностику',
         copyLogs: 'Копировать логи',
-        appVersion: 'Версия v1.4.1'
+        appVersion: 'Версия v1.4.1',
+        correctGuess: 'ВЕРНО',
+        incorrectGuess: 'НЕВЕРНО'
     },
     en: {
         themeNight: '🌙 Night',
@@ -308,7 +312,9 @@ const translations = {
         clearLogs: 'Clear Logs',
         runDiagnostics: 'Run Diagnostics',
         copyLogs: 'Copy Logs',
-        appVersion: 'Version v1.4.1'
+        appVersion: 'Version v1.4.1',
+        correctGuess: 'CORRECT',
+        incorrectGuess: 'INCORRECT'
     },
     alien: {
         themeNight: '🌙 ⊸⍟⊸',
@@ -340,7 +346,9 @@ const translations = {
         clearLogs: '⊸⍟⊸ ⊸⍟⊸',
         runDiagnostics: '⊸⍟⊸',
         copyLogs: '⊸⍟⊸',
-        appVersion: '⊸⍟⊸ v1.4.1'
+        appVersion: '⊸⍟⊸ v1.4.1',
+        correctGuess: '✓ ⊸⍟⊸',
+        incorrectGuess: '✗ ⊸⍟⊸'
     }
 };
 
@@ -1547,6 +1555,8 @@ function handleError() {
         
         personInfo.style.display = 'none'; 
         personInfo.classList.remove('correct', 'incorrect');
+        const statusBadge = document.getElementById('person-status-badge');
+        if (statusBadge) statusBadge.classList.add('hidden');
         updateUI(null); 
 
         if (gameMode === 'closed') {
@@ -1773,6 +1783,8 @@ async function loadNextPerson(triggerButton = 'unknown') {
     const personInfo = document.getElementById('person-info');
     personInfo.style.display = 'none';
     personInfo.classList.remove('correct', 'incorrect');
+    const statusBadge = document.getElementById('person-status-badge');
+    if (statusBadge) statusBadge.classList.add('hidden');
 
     const nextEntry = sessionList.shift(); 
     if (nextEntry && nextEntry.person) { 
@@ -1864,6 +1876,8 @@ function startNewGame() {
     const personInfo = document.getElementById('person-info');
     personInfo.style.display = 'none'; 
     personInfo.classList.remove('correct', 'incorrect');
+    const statusBadge = document.getElementById('person-status-badge');
+    if (statusBadge) statusBadge.classList.add('hidden');
     updateUI(null); 
     console.log('[GAME_FLOW_UI] Statistics display and general UI reset.');
 
@@ -2014,6 +2028,10 @@ document.getElementById('check-btn').addEventListener('click', () => {
         personInfo.style.display = 'block'; 
         personInfo.classList.remove('correct', 'incorrect'); 
 
+        const statusBadge = document.getElementById('person-status-badge');
+        const statusTextEl = document.getElementById('person-status-text');
+        const statusIconEl = statusBadge ? statusBadge.querySelector('.material-symbols-outlined') : null;
+
         if (gameMode === 'closed') {
             overlay.classList.add('hidden'); 
             personImage.classList.add('loaded'); 
@@ -2024,10 +2042,22 @@ document.getElementById('check-btn').addEventListener('click', () => {
             personInfo.classList.add('correct');
             successfulGuesses++;
             console.log('[CHECK_UI] Guess was CORRECT.');
+            if (statusBadge && statusTextEl) {
+                statusBadge.classList.remove('hidden', 'bg-spirit-violet/10', 'text-spirit-violet', 'border-spirit-violet/20');
+                statusBadge.classList.add('bg-neon-cyan/15', 'text-neon-cyan', 'border-neon-cyan/30');
+                statusTextEl.textContent = translations[selectedLanguage].correctGuess || 'CORRECT';
+                if (statusIconEl) statusIconEl.textContent = 'check_circle';
+            }
         } else {
             personInfo.classList.add('incorrect');
             failedGuesses++;
             console.log('[CHECK_UI] Guess was INCORRECT.');
+            if (statusBadge && statusTextEl) {
+                statusBadge.classList.remove('hidden', 'bg-neon-cyan/15', 'text-neon-cyan', 'border-neon-cyan/30');
+                statusBadge.classList.add('bg-spirit-violet/15', 'text-spirit-violet', 'border-spirit-violet/30');
+                statusTextEl.textContent = translations[selectedLanguage].incorrectGuess || 'INCORRECT';
+                if (statusIconEl) statusIconEl.textContent = 'cancel';
+            }
         }
         document.getElementById('next-person').style.display = 'block'; 
         
@@ -2290,6 +2320,8 @@ window.onload = () => {
     const personInfoOnLoad = document.getElementById('person-info');
     personInfoOnLoad.style.display = 'none'; 
     personInfoOnLoad.classList.remove('correct', 'incorrect'); 
+    const statusBadge = document.getElementById('person-status-badge');
+    if (statusBadge) statusBadge.classList.add('hidden');
 
     if (isFirstLaunchOrReset) {
         console.log("[WINDOW_ONLOAD] First launch or reset detected. Initializing a new game.");
