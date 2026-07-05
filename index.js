@@ -244,7 +244,7 @@ const translations = {
         clearLogs: 'Очистити логи',
         runDiagnostics: 'Запустити діагностику',
         copyLogs: 'Копіювати логи',
-        appVersion: 'Версія v1.4.1',
+        appVersion: 'Версія v1.4.2',
         correctGuess: 'ВІРНО',
         incorrectGuess: 'НЕВІРНО'
     },
@@ -278,7 +278,7 @@ const translations = {
         clearLogs: 'Очистить логи',
         runDiagnostics: 'Запустить диагностику',
         copyLogs: 'Копировать логи',
-        appVersion: 'Версия v1.4.1',
+        appVersion: 'Версия v1.4.2',
         correctGuess: 'ВЕРНО',
         incorrectGuess: 'НЕВЕРНО'
     },
@@ -312,7 +312,7 @@ const translations = {
         clearLogs: 'Clear Logs',
         runDiagnostics: 'Run Diagnostics',
         copyLogs: 'Copy Logs',
-        appVersion: 'Version v1.4.1',
+        appVersion: 'Version v1.4.2',
         correctGuess: 'CORRECT',
         incorrectGuess: 'INCORRECT'
     },
@@ -346,7 +346,7 @@ const translations = {
         clearLogs: '⊸⍟⊸ ⊸⍟⊸',
         runDiagnostics: '⊸⍟⊸',
         copyLogs: '⊸⍟⊸',
-        appVersion: '⊸⍟⊸ v1.4.1',
+        appVersion: '⊸⍟⊸ v1.4.2',
         correctGuess: '✓ ⊸⍟⊸',
         incorrectGuess: '✗ ⊸⍟⊸'
     }
