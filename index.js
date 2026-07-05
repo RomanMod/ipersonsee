@@ -256,7 +256,7 @@ const translations = {
         clearLogs: 'Очистити логи',
         runDiagnostics: 'Запустити діагностику',
         copyLogs: 'Копіювати логи',
-        appVersion: 'Версія v1.4.2',
+        appVersion: 'Версія v2.0.1',
         correctGuess: 'ВІРНО',
         incorrectGuess: 'НЕВІРНО'
     },
@@ -290,7 +290,7 @@ const translations = {
         clearLogs: 'Очистить логи',
         runDiagnostics: 'Запустить диагностику',
         copyLogs: 'Копировать логи',
-        appVersion: 'Версия v1.4.2',
+        appVersion: 'Версия v2.0.1',
         correctGuess: 'ВЕРНО',
         incorrectGuess: 'НЕВЕРНО'
     },
@@ -324,7 +324,7 @@ const translations = {
         clearLogs: 'Clear Logs',
         runDiagnostics: 'Run Diagnostics',
         copyLogs: 'Copy Logs',
-        appVersion: 'Version v1.4.2',
+        appVersion: 'Version v2.0.1',
         correctGuess: 'CORRECT',
         incorrectGuess: 'INCORRECT'
     },
@@ -358,7 +358,7 @@ const translations = {
         clearLogs: '⊸⍟⊸ ⊸⍟⊸',
         runDiagnostics: '⊸⍟⊸',
         copyLogs: '⊸⍟⊸',
-        appVersion: '⊸⍟⊸ v1.4.2',
+        appVersion: '⊸⍟⊸ v2.0.1',
         correctGuess: '✓ ⊸⍟⊸',
         incorrectGuess: '✗ ⊸⍟⊸'
     }
@@ -590,7 +590,7 @@ function updateLanguage() {
     // Translate version badge dynamically using __APP_VERSION__ injected by Vite
     const versionBadge = document.getElementById('app-version-badge');
     if (versionBadge) {
-        let currentVersion = '1.4.1';
+        let currentVersion = '2.0.1';
         try {
             if (typeof __APP_VERSION__ !== 'undefined') {
                 currentVersion = __APP_VERSION__;
@@ -2236,7 +2236,7 @@ function setupDiagnosticsPanel() {
                     diagPanel.style.display = window.diagnosticsEnabled ? 'block' : 'none';
                 }
 
-                let currentVersion = '1.4.1';
+                let currentVersion = '2.0.1';
                 try {
                     if (typeof __APP_VERSION__ !== 'undefined') {
                         currentVersion = __APP_VERSION__;
