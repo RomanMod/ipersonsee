@@ -173,9 +173,21 @@ const settings = {
     strictCountryFilter: false
 };
 
+// Helper function for safe localStorage parsing to prevent crashes
+function safeParse(key, defaultValue) {
+    try {
+        const val = localStorage.getItem(key);
+        if (val === null || val === undefined) return defaultValue;
+        return JSON.parse(val);
+    } catch (e) {
+        console.error(`[STORAGE_ERROR] Error parsing key "${key}" from localStorage:`, e);
+        return defaultValue;
+    }
+}
+
 // Кэш и состояние
-const rgbHslCache = JSON.parse(localStorage.getItem('rgbHslCache')) || {};
-const wikidataCache = JSON.parse(localStorage.getItem('wikidataCache')) || {};
+const rgbHslCache = safeParse('rgbHslCache', {});
+const wikidataCache = safeParse('wikidataCache', {});
 let sessionList = [];
 let isStreamingActive = false;
 let currentStreamId = 0;
@@ -189,8 +201,8 @@ let failedGuesses = parseInt(localStorage.getItem('failedGuesses')) || 0;
 let hasChecked = false;
 let currentAttempts = parseInt(localStorage.getItem('currentAttempts')) || 0;
 const maxAttempts = 10;
-let guessResultsHistory = JSON.parse(localStorage.getItem('guessResultsHistory')) || []; // Stores 1 for success, 0 for fail
-let attemptDurations = JSON.parse(localStorage.getItem('attemptDurations')) || [];
+let guessResultsHistory = safeParse('guessResultsHistory', []); // Stores 1 for success, 0 for fail
+let attemptDurations = safeParse('attemptDurations', []);
 
 
 // Состояние для GA4 события attempt_completed
@@ -676,15 +688,18 @@ if (modeToggleBtn) {
 }
 
 // Переключение темы
-document.getElementById('theme-toggle').addEventListener('click', () => {
-    isNight = !isNight;
-    const newTheme = isNight ? 'night' : 'day';
-    document.body.classList.toggle('day', !isNight);
-    localStorage.setItem('theme', newTheme);
-    console.log(`[THEME_CHANGE] Theme changed to: ${newTheme}. Saved to localStorage.`);
-    sendGAEvent('theme_changed', { new_theme: newTheme });
-    updateLanguage(); // To update button text
-});
+const themeToggleBtn = document.getElementById('theme-toggle');
+if (themeToggleBtn) {
+    themeToggleBtn.addEventListener('click', () => {
+        isNight = !isNight;
+        const newTheme = isNight ? 'night' : 'day';
+        document.body.classList.toggle('day', !isNight);
+        localStorage.setItem('theme', newTheme);
+        console.log(`[THEME_CHANGE] Theme changed to: ${newTheme}. Saved to localStorage.`);
+        sendGAEvent('theme_changed', { new_theme: newTheme });
+        updateLanguage(); // To update button text
+    });
+}
 
 // Обновление видимости элементов в зависимости от режима
 function updateModeVisibility() {
@@ -2309,8 +2324,8 @@ window.onload = () => {
     if (storedAttemptStartTime) {
         currentAttemptStartTime = parseInt(storedAttemptStartTime, 10);
     }
-    guessResultsHistory = JSON.parse(localStorage.getItem('guessResultsHistory')) || [];
-    attemptDurations = JSON.parse(localStorage.getItem('attemptDurations')) || [];
+    guessResultsHistory = safeParse('guessResultsHistory', []);
+    attemptDurations = safeParse('attemptDurations', []);
     console.log(`[WINDOW_ONLOAD_RESTORE] Restored from localStorage - Session ID: ${currentSessionId}, Attempt Start Time: ${currentAttemptStartTime}, Guess Results History: ${guessResultsHistory}, Attempt Durations: ${attemptDurations}`);
 
 
