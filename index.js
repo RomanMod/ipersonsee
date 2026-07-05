@@ -1,3 +1,56 @@
+// Safe localStorage wrapper to prevent crashes in sandboxed iframe or Telegram WebView environments
+const localStorage = (() => {
+    let storage = {};
+    let isSupported = false;
+    try {
+        if (typeof window !== 'undefined' && 'localStorage' in window && window.localStorage !== null) {
+            window.localStorage.setItem('__test_ls_support', '1');
+            window.localStorage.removeItem('__test_ls_support');
+            isSupported = true;
+        }
+    } catch (e) {
+        // Native localStorage is blocked or not available
+    }
+
+    return {
+        getItem(key) {
+            if (isSupported) {
+                try {
+                    return window.localStorage.getItem(key);
+                } catch (e) {}
+            }
+            return storage[key] !== undefined ? storage[key] : null;
+        },
+        setItem(key, value) {
+            if (isSupported) {
+                try {
+                    window.localStorage.setItem(key, value);
+                    return;
+                } catch (e) {}
+            }
+            storage[key] = String(value);
+        },
+        removeItem(key) {
+            if (isSupported) {
+                try {
+                    window.localStorage.removeItem(key);
+                    return;
+                } catch (e) {}
+            }
+            delete storage[key];
+        },
+        clear() {
+            if (isSupported) {
+                try {
+                    window.localStorage.clear();
+                    return;
+                } catch (e) {}
+            }
+            storage = {};
+        }
+    };
+})();
+
 // === LOG CAPTURE & DIAGNOSTICS CODE ===
 const originalConsoleLog = console.log;
 const originalConsoleWarn = console.warn;
