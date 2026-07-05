@@ -1,0 +1,176 @@
+@import "tailwindcss";
+
+/* Design System Theme Definitions */
+@theme {
+  --color-void-black: #0A0A0B;
+  --color-deep-space: #1C1C1E;
+  --color-lunar-gray: #2C2C2E;
+  --color-neon-cyan: #00F0FF;
+  --color-spirit-violet: #BC13FE;
+  --color-ritual-gold: #FFD700;
+  --color-surface-container-low: #1c1b1b;
+  --color-surface-container-lowest: #0e0e0e;
+  --color-on-surface: #e5e2e1;
+}
+
+:root {
+    --bg-color: #0A0A0B;
+    --text-color: #e5e2e1;
+    --text-color-variant: #b9cacb;
+    --accent-color: #00F0FF;
+    --button-bg: #1c1b1b;
+    --button-hover: #2C2C2E;
+    --button-text: #e5e2e1;
+}
+
+/* Custom color class overrides for absolute reliability */
+.text-on-surface {
+    color: var(--text-color) !important;
+}
+.text-on-surface-variant {
+    color: var(--text-color-variant) !important;
+}
+
+/* Day/Light theme overrides */
+body.day {
+    --bg-color: #ECEFF1;
+    --text-color: #1C1C1E;
+    --text-color-variant: #4A5568;
+    --accent-color: #BC13FE;
+    --button-bg: #E2E8F0;
+    --button-hover: #CBD5E1;
+    --button-text: #1C1C1E;
+    background-color: #ECEFF1 !important;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Light Theme Component Specific Overrides */
+body.day .bg-void-black,
+body.day .bg-surface-container-low,
+body.day [class*="bg-surface-container-low"],
+body.day .bg-surface-container-lowest,
+body.day [class*="bg-surface-container-lowest"] {
+    background-color: #FFFFFF !important;
+    border-color: #CBD5E1 !important;
+}
+
+body.day .text-on-surface,
+body.day [class*="text-on-surface"] {
+    color: #1C1C1E !important;
+}
+
+body.day .text-on-surface-variant,
+body.day [class*="text-on-surface-variant"] {
+    color: #4A5568 !important;
+}
+
+body.day .border-white\/5,
+body.day .border-white\/10,
+body.day [class*="border-white"] {
+    border-color: #CBD5E1 !important;
+}
+
+body.day #game-stats {
+    background-color: #FFFFFF !important;
+    border-color: #CBD5E1 !important;
+}
+
+body.day .options {
+    background-color: #FFFFFF !important;
+    border-color: #CBD5E1 !important;
+}
+
+body.day .options li {
+    color: #1C1C1E !important;
+}
+
+/* Ritual Frame styling */
+.ritual-frame {
+    position: relative;
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.05) 0%, rgba(188, 19, 254, 0.05) 100%);
+    transition: all 0.5s ease-in-out;
+}
+
+.ritual-frame::before {
+    content: '';
+    position: absolute;
+    top: -1px; left: -1px; right: -1px; bottom: -1px;
+    background: linear-gradient(45deg, #00F0FF, transparent, #BC13FE);
+    z-index: 1;
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    border-radius: 1rem;
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+/* Portrait transitions */
+#person-image {
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out, transform 0.7s ease-in-out;
+}
+
+#person-image.loaded {
+    opacity: 0.8;
+}
+
+#person-image.loaded:hover {
+    opacity: 1;
+    transform: scale(1.02);
+}
+
+/* Active buttons styling applied dynamically by JS */
+#male-btn.active, #alive-btn.active {
+    background-color: rgba(0, 240, 255, 0.15) !important;
+    border-color: #00F0FF !important;
+    color: #00F0FF !important;
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.25) !important;
+}
+
+#female-btn.active, #dead-btn.active {
+    background-color: rgba(188, 19, 254, 0.15) !important;
+    border-color: #BC13FE !important;
+    color: #BC13FE !important;
+    box-shadow: 0 0 15px rgba(188, 19, 254, 0.25) !important;
+}
+
+/* Correct / Incorrect overrides for person info box */
+#person-info.correct {
+    border-color: #00F0FF !important;
+    background-color: rgba(0, 240, 255, 0.08) !important;
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.15) !important;
+}
+
+#person-info.incorrect {
+    border-color: #BC13FE !important;
+    background-color: rgba(188, 19, 254, 0.08) !important;
+    box-shadow: 0 0 20px rgba(188, 19, 254, 0.15) !important;
+}
+
+/* Slow spin animation for loading refresh icon */
+@keyframes spin-slow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+.animate-spin-slow {
+    animation: spin-slow 12s linear infinite;
+}
+
+/* Remove default scrollbar on game history list */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* Support responsive styling and scroll behaviors */
+html {
+    scroll-behavior: smooth;
+}
