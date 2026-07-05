@@ -56,7 +56,7 @@ const originalConsoleLog = console.log;
 const originalConsoleWarn = console.warn;
 const originalConsoleError = console.error;
 
-window.diagnosticsEnabled = localStorage.getItem('diagnostics_enabled') === 'true';
+window.diagnosticsEnabled = localStorage.getItem('diagnostics_enabled') !== 'false';
 
 window.appLogs = [];
 try {
