@@ -1,210 +1,37 @@
-// === GLOBAL APPLICATION CONFIGURATION ===
-// Change the version number here in exactly one place!
-const APP_VERSION_FALLBACK = '2.0.5';
-
 // Safe localStorage wrapper to prevent crashes in sandboxed iframe or Telegram WebView environments
-const localStorage = (() => {
+const safeLocalStorage = (() => {
     let storage = {};
-    let isSupported = false;
-    try {
-        if (typeof window !== 'undefined' && 'localStorage' in window && window.localStorage !== null) {
-            window.localStorage.setItem('__test_ls_support', '1');
-            window.localStorage.removeItem('__test_ls_support');
-            isSupported = true;
-        }
-    } catch (e) {
-        // Native localStorage is blocked or not available
-    }
-
     return {
-        getItem(key) {
-            if (isSupported) {
-                try {
-                    return window.localStorage.getItem(key);
-                } catch (e) {}
+        getItem: (key) => {
+            try {
+                return window.safeLocalStorage.getItem(key) || storage[key] || null;
+            } catch (e) {
+                return storage[key] || null;
             }
-            return storage[key] !== undefined ? storage[key] : null;
         },
-        setItem(key, value) {
-            if (isSupported) {
-                try {
-                    window.localStorage.setItem(key, value);
-                    return;
-                } catch (e) {}
+        setItem: (key, value) => {
+            try {
+                window.safeLocalStorage.setItem(key, value);
+            } catch (e) {
+                storage[key] = value.toString();
             }
-            storage[key] = String(value);
         },
-        removeItem(key) {
-            if (isSupported) {
-                try {
-                    window.localStorage.removeItem(key);
-                    return;
-                } catch (e) {}
+        removeItem: (key) => {
+            try {
+                window.safeLocalStorage.removeItem(key);
+            } catch (e) {
+                delete storage[key];
             }
-            delete storage[key];
         },
-        clear() {
-            if (isSupported) {
-                try {
-                    window.localStorage.clear();
-                    return;
-                } catch (e) {}
+        clear: () => {
+            try {
+                window.safeLocalStorage.clear();
+            } catch (e) {
+                storage = {};
             }
-            storage = {};
         }
     };
 })();
-
-// === LOG CAPTURE & DIAGNOSTICS CODE ===
-const originalConsoleLog = console.log;
-const originalConsoleWarn = console.warn;
-const originalConsoleError = console.error;
-
-window.diagnosticsEnabled = true; // Temporarily force-enable diagnostics for troubleshooting
-
-window.appLogs = [];
-try {
-    if (window.diagnosticsEnabled) {
-        const savedLogsString = localStorage.getItem('appLogs_persistent');
-        if (savedLogsString) {
-            window.appLogs = JSON.parse(savedLogsString);
-            window.appLogs.push(`[${new Date().toISOString().split('T')[1].slice(0, 11)}] [SYSTEM] --- APPLICATION RESTARTED (PREVIOUS LOGS PRESERVED) ---`);
-            if (window.appLogs.length > 500) {
-                window.appLogs.shift();
-            }
-        }
-    }
-} catch (e) {
-    window.appLogs = [];
-}
-
-function captureLog(type, args) {
-    if (!window.diagnosticsEnabled) {
-        return;
-    }
-    const timeStr = new Date().toISOString().split('T')[1].slice(0, 11);
-    const message = args.map(arg => {
-        if (typeof arg === 'object') {
-            try { return JSON.stringify(arg); } catch (e) { return String(arg); }
-        }
-        return String(arg);
-    }).join(' ');
-    
-    window.appLogs.push(`[${timeStr}] [${type}] ${message}`);
-    if (window.appLogs.length > 500) {
-        window.appLogs.shift();
-    }
-    
-    try {
-        localStorage.setItem('appLogs_persistent', JSON.stringify(window.appLogs));
-    } catch (e) {}
-    
-    const debugPre = document.getElementById('debug-log-output');
-    if (debugPre) {
-        debugPre.textContent = window.appLogs.join('\n');
-        // Auto scroll to bottom
-        debugPre.scrollTop = debugPre.scrollHeight;
-    }
-}
-
-console.log = function(...args) {
-    originalConsoleLog.apply(console, args);
-    captureLog('LOG', args);
-};
-console.warn = function(...args) {
-    originalConsoleWarn.apply(console, args);
-    captureLog('WARN', args);
-};
-console.error = function(...args) {
-    originalConsoleError.apply(console, args);
-    captureLog('ERROR', args);
-};
-
-window.addEventListener('error', (event) => {
-    console.error(`[UNCAUGHT_ERROR] Got uncaught exception in window: ${event.message} at ${event.filename}:${event.lineno}:${event.colno}`);
-});
-
-window.addEventListener('unhandledrejection', (event) => {
-    console.error(`[UNHANDLED_PROMISE] Got unhandled rejection: ${event.reason}`);
-});
-
-function runSystemDiagnostics() {
-    console.log('--- RUNNING DIAGNOSTICS ---');
-    console.log(`[DIAG] Current Local Time: ${new Date().toString()}`);
-    try {
-        console.log(`[DIAG] Build App Version: v${APP_VERSION_FALLBACK}`);
-        if (typeof __BUILD_TIME__ !== 'undefined') {
-            console.log(`[DIAG] Build Completion Time: ${__BUILD_TIME__}`);
-        }
-    } catch (e) {}
-    console.log(`[DIAG] User Agent: ${navigator.userAgent}`);
-    console.log(`[DIAG] Platform (Navigator): ${navigator.platform}`);
-    
-    // Telegram State
-    if (window.Telegram) {
-        console.log('[DIAG] window.Telegram: Present');
-        if (window.Telegram.WebApp) {
-            console.log('[DIAG] Telegram.WebApp: Present');
-            console.log(`[DIAG] WebApp Platform: ${window.Telegram.WebApp.platform}`);
-            console.log(`[DIAG] WebApp Version: ${window.Telegram.WebApp.version}`);
-            console.log(`[DIAG] WebApp ColorScheme: ${window.Telegram.WebApp.colorScheme}`);
-            console.log(`[DIAG] WebApp IsExpanded: ${window.Telegram.WebApp.isExpanded}`);
-            
-            const tgUser = window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user;
-            if (tgUser) {
-                console.log(`[DIAG] WebApp User ID: ${tgUser.id}`);
-                console.log(`[DIAG] WebApp Username: ${tgUser.username || "none"}`);
-                console.log(`[DIAG] WebApp LangCode: ${tgUser.language_code || "none"}`);
-            } else {
-                console.log('[DIAG] WebApp User: No data in initDataUnsafe');
-            }
-        } else {
-            console.log('[DIAG] Telegram.WebApp: Undefined');
-        }
-    } else {
-        console.log('[DIAG] window.Telegram: Undefined (not running in Telegram)');
-    }
-    
-    // Privacy and cookies
-    try {
-        localStorage.setItem('__test_ls', '1');
-        localStorage.removeItem('__test_ls');
-        console.log('[DIAG] LocalStorage write check: SUCCESS');
-    } catch(e) {
-        console.error('[DIAG] LocalStorage write check: FAILING', e);
-    }
-    
-    try {
-        document.cookie = "ga_test=1; SameSite=Lax";
-        const cookiesAllowed = document.cookie.indexOf("ga_test") !== -1;
-        console.log(`[DIAG] Cookies write check: ${cookiesAllowed ? 'ALLOWED' : 'BLOCKED/DENIED'}`);
-    } catch (e) {
-        console.error('[DIAG] Cookies write check: FAILING', e);
-    }
-    
-    // GTM and gtag Status
-    const gaScripts = Array.from(document.querySelectorAll('script')).filter(s => s.src && s.src.includes('googletagmanager.com'));
-    console.log(`[DIAG] GTM elements found in DOM: ${gaScripts.length}`);
-    gaScripts.forEach((s, i) => {
-        console.log(`  [GTM-Script #${i}] SRC: ${s.src}, ASYNC: ${s.async}`);
-    });
-    
-    console.log(`[DIAG] typeof gtag: ${typeof gtag}`);
-    console.log(`[DIAG] typeof window.gtag: ${typeof window.gtag}`);
-    console.log(`[DIAG] window.google_tag_manager present: ${typeof window.google_tag_manager !== 'undefined'}`);
-    console.log(`[DIAG] window.dataLayer present: ${typeof window.dataLayer !== 'undefined'}`);
-    if (typeof window.dataLayer !== 'undefined') {
-        console.log(`[DIAG] window.dataLayer length: ${window.dataLayer.length}`);
-        try {
-            console.log(`[DIAG] window.dataLayer events list: ${JSON.stringify(window.dataLayer)}`);
-        } catch(err) {
-            console.log(`[DIAG] window.dataLayer stringify error: ${err.message}`);
-        }
-    }
-    console.log('--- END DIAGNOSTICS ---');
-}
-// ======================================
-
 
 // Настройки приложения
 const settings = {
@@ -228,41 +55,27 @@ const settings = {
     strictCountryFilter: false
 };
 
-// Helper function for safe localStorage parsing to prevent crashes
-function safeParse(key, defaultValue) {
-    try {
-        const val = localStorage.getItem(key);
-        if (val === null || val === undefined) return defaultValue;
-        return JSON.parse(val);
-    } catch (e) {
-        console.error(`[STORAGE_ERROR] Error parsing key "${key}" from localStorage:`, e);
-        return defaultValue;
-    }
-}
-
 // Кэш и состояние
-const rgbHslCache = safeParse('rgbHslCache', {});
-const wikidataCache = safeParse('wikidataCache', {});
+const rgbHslCache = JSON.parse(safeLocalStorage.getItem('rgbHslCache')) || {};
+const wikidataCache = JSON.parse(safeLocalStorage.getItem('wikidataCache')) || {};
 let sessionList = [];
-let isStreamingActive = false;
-let currentStreamId = 0;
 let loadedPhotos = 0;
 let currentPerson = null;
 let userGenderGuess = null;
 let userStatusGuess = null;
-let totalGuesses = parseInt(localStorage.getItem('totalGuesses')) || 0;
-let successfulGuesses = parseInt(localStorage.getItem('successfulGuesses')) || 0;
-let failedGuesses = parseInt(localStorage.getItem('failedGuesses')) || 0;
+let totalGuesses = parseInt(safeLocalStorage.getItem('totalGuesses')) || 0;
+let successfulGuesses = parseInt(safeLocalStorage.getItem('successfulGuesses')) || 0;
+let failedGuesses = parseInt(safeLocalStorage.getItem('failedGuesses')) || 0;
 let hasChecked = false;
-let currentAttempts = parseInt(localStorage.getItem('currentAttempts')) || 0;
+let currentAttempts = parseInt(safeLocalStorage.getItem('currentAttempts')) || 0;
 const maxAttempts = 10;
-let guessResultsHistory = safeParse('guessResultsHistory', []); // Stores 1 for success, 0 for fail
-let attemptDurations = safeParse('attemptDurations', []);
+let guessResultsHistory = JSON.parse(safeLocalStorage.getItem('guessResultsHistory')) || []; // Stores 1 for success, 0 for fail
+let attemptDurations = JSON.parse(safeLocalStorage.getItem('attemptDurations')) || [];
 
 
 // Состояние для GA4 события attempt_completed
-let currentSessionId = localStorage.getItem('currentSessionId') || null;
-let currentAttemptStartTime = localStorage.getItem('currentAttemptStartTime') ? parseInt(localStorage.getItem('currentAttemptStartTime')) : null;
+let currentSessionId = safeLocalStorage.getItem('currentSessionId') || null;
+let currentAttemptStartTime = safeLocalStorage.getItem('currentAttemptStartTime') ? parseInt(safeLocalStorage.getItem('currentAttemptStartTime')) : null;
 let telegramUserId = null; // Telegram User ID
 let telegramUserName = null; // Telegram User Name
 
@@ -286,7 +99,7 @@ const translations = {
         themeDay: '☀ День',
         modeOpen: 'Відкритий',
         modeClosed: 'Закритий',
-        nextPhoto: 'Знайти нове фото',
+        nextPhoto: '🔄 Знайти нове фото',
         nextPerson: 'Наступне фото',
         unknown: 'Невідомо',
         testPerson: 'Тестовий персонаж',
@@ -306,21 +119,14 @@ const translations = {
         guessHistory: 'Історія успіх/час:',
         imageDisplayAlt: 'Зображення людини',
         errorLoadingImage: 'Помилка завантаження зображення',
-        playerNameLabel: 'Гравець',
-        diagnosticsTitle: '📊 Діагностика & Логи',
-        clearLogs: 'Очистити логи',
-        runDiagnostics: 'Запустити діагностику',
-        copyLogs: 'Копіювати логи',
-        appVersion: `Версія v${APP_VERSION_FALLBACK}`,
-        correctGuess: 'ВІРНО',
-        incorrectGuess: 'НЕВІРНО'
+        playerNameLabel: 'Гравець'
     },
     ru: {
         themeNight: '🌙 Ночь',
         themeDay: '☀ День',
         modeOpen: 'Открытый',
         modeClosed: 'Закрытый',
-        nextPhoto: 'Найти новое фото',
+        nextPhoto: '🔄 Найти новое фото',
         nextPerson: 'Следующее фото',
         unknown: 'Неизвестно',
         testPerson: 'Тестовый персонаж',
@@ -340,21 +146,14 @@ const translations = {
         guessHistory: 'История успех/время:',
         imageDisplayAlt: 'Изображение человека',
         errorLoadingImage: 'Ошибка загрузки изображения',
-        playerNameLabel: 'Игрок',
-        diagnosticsTitle: '📊 Диагностика & Логи',
-        clearLogs: 'Очистить логи',
-        runDiagnostics: 'Запустить диагностику',
-        copyLogs: 'Копировать логи',
-        appVersion: `Версия v${APP_VERSION_FALLBACK}`,
-        correctGuess: 'ВЕРНО',
-        incorrectGuess: 'НЕВЕРНО'
+        playerNameLabel: 'Игрок'
     },
     en: {
         themeNight: '🌙 Night',
         themeDay: '☀ Day',
         modeOpen: 'Open',
         modeClosed: 'Closed',
-        nextPhoto: 'Find New Photo',
+        nextPhoto: '🔄 Find New Photo',
         nextPerson: 'Next Photo',
         unknown: 'Unknown',
         testPerson: 'Test Person',
@@ -374,21 +173,14 @@ const translations = {
         guessHistory: 'History success/time:',
         imageDisplayAlt: 'Image of person',
         errorLoadingImage: 'Error loading image',
-        playerNameLabel: 'Player',
-        diagnosticsTitle: '📊 Diagnostics & Logs',
-        clearLogs: 'Clear Logs',
-        runDiagnostics: 'Run Diagnostics',
-        copyLogs: 'Copy Logs',
-        appVersion: `Version v${APP_VERSION_FALLBACK}`,
-        correctGuess: 'CORRECT',
-        incorrectGuess: 'INCORRECT'
+        playerNameLabel: 'Player'
     },
     alien: {
         themeNight: '🌙 ⊸⍟⊸',
         themeDay: '☀ ⊸⍟⊸',
         modeOpen: '⊸⍟⊸',
         modeClosed: '⊸⍟⊸⊸',
-        nextPhoto: '⊸⍟⊸ ⊸⍟⊸',
+        nextPhoto: '🔄 ⊸⍟⊸ ⊸⍟⊸',
         nextPerson: '⊸⍟⊸ ⊸⍟⊸',
         unknown: '⊸⍟⊸⊸⊸',
         testPerson: '⊸⍟⊸ ⊸⍟⊸',
@@ -408,27 +200,14 @@ const translations = {
         guessHistory: '⊸⍀⍟ ✓/⍊:',
         imageDisplayAlt: '⊸⍉⋉⏁ ⍜⎎ ⌿⟒⍀⌇⍜⋏', // Alien for "Image of person"
         errorLoadingImage: '⊸⍟⊸ ⌰⍜⏃⎅ ⟒⍀⍜⍀', // Alien for "Error loading image"
-        playerNameLabel: '⌿⌰⏃⊬⟒⍀',
-        diagnosticsTitle: '📊 ⊸⍟⊸ & ⊸⍟⊸',
-        clearLogs: '⊸⍟⊸ ⊸⍟⊸',
-        runDiagnostics: '⊸⍟⊸',
-        copyLogs: '⊸⍟⊸',
-        appVersion: `⊸⍟⊸ v${APP_VERSION_FALLBACK}`,
-        correctGuess: '✓ ⊸⍟⊸',
-        incorrectGuess: '✗ ⊸⍟⊸'
+        playerNameLabel: '⌿⌰⏃⊬⟒⍀'
     }
 };
 
 // Инициализация настроек
-let isNight = localStorage.getItem('theme') !== 'day';
-let selectedLanguage = localStorage.getItem('language') || 'uk'; // Default to Ukrainian
-if (!translations[selectedLanguage]) {
-    selectedLanguage = 'uk';
-}
-let gameMode = localStorage.getItem('mode') || 'open';
-if (gameMode !== 'open' && gameMode !== 'closed') {
-    gameMode = 'open';
-}
+let isNight = safeLocalStorage.getItem('theme') !== 'day';
+let selectedLanguage = safeLocalStorage.getItem('language') || 'uk'; // Default to Ukrainian
+let gameMode = safeLocalStorage.getItem('mode') || 'open';
 
 // Google Analytics 4 Event Sender
 function sendGAEvent(eventName, eventParams = {}) {
@@ -436,25 +215,6 @@ function sendGAEvent(eventName, eventParams = {}) {
         const paramsToSend = { ...eventParams }; // Create a copy
         if (telegramUserId) {
             paramsToSend.telegram_user_id = telegramUserId;
-        }
-        if (currentSessionId) {
-            if (!paramsToSend.ga_session_id) {
-                paramsToSend.ga_session_id = currentSessionId;
-            }
-            if (!paramsToSend.session_id) {
-                paramsToSend.session_id = currentSessionId;
-            }
-        }
-        if (selectedLanguage) {
-            if (!paramsToSend.language) {
-                paramsToSend.language = selectedLanguage;
-            }
-            if (!paramsToSend.new_language) {
-                paramsToSend.new_language = selectedLanguage;
-            }
-        }
-        if (!paramsToSend.current_theme) {
-            paramsToSend.current_theme = isNight ? 'night' : 'day';
         }
         gtag('event', eventName, paramsToSend);
         console.log(`[GA_EVENT_SENT] Name: ${eventName}, Params:`, JSON.parse(JSON.stringify(paramsToSend)));
@@ -464,17 +224,9 @@ function sendGAEvent(eventName, eventParams = {}) {
 }
 
 
-if (document.body) {
-    document.body.classList.toggle('day', !isNight);
-}
-const languageSelectBtn = document.querySelector('#language-select .selected-option');
-if (languageSelectBtn) {
-    languageSelectBtn.textContent = selectedLanguage === 'uk' ? 'Українська' : selectedLanguage === 'ru' ? 'Русский' : selectedLanguage === 'en' ? 'English' : '👽 ⊸⍟⊸';
-}
-const modeToggleBtnInit = document.getElementById('mode-toggle');
-if (modeToggleBtnInit) {
-    modeToggleBtnInit.textContent = translations[selectedLanguage][`mode${gameMode.charAt(0).toUpperCase() + gameMode.slice(1)}`];
-}
+document.body.classList.toggle('day', !isNight);
+document.querySelector('#language-select .selected-option').textContent = selectedLanguage === 'uk' ? 'Українська' : selectedLanguage === 'ru' ? 'Русский' : selectedLanguage === 'en' ? 'English' : '👽 ⊸⍟⊸';
+document.querySelector('#mode-select .selected-option').textContent = translations[selectedLanguage][`mode${gameMode.charAt(0).toUpperCase() + gameMode.slice(1)}`];
 
 // Логирование инициализации
 console.log('[APP_INIT] Initializing application...');
@@ -492,8 +244,8 @@ console.log('[APP_INIT] Attempt Durations from localStorage:', attemptDurations)
 
 
 // Function to update the New Game button's position
-function updateNewGameButtonPosition(isInitialCall = false) {
-    console.log('[UI_UPDATE] updateNewGameButtonPosition called. Attempts:', currentAttempts, 'Max:', maxAttempts, 'IsInitialCall:', isInitialCall);
+function updateNewGameButtonPosition() {
+    console.log('[UI_UPDATE] updateNewGameButtonPosition called. Attempts:', currentAttempts, 'Max:', maxAttempts);
     if (!newGameBtn || !initialNewGameContainer || !gameOverNewGameContainer) {
         console.error("[UI_ERROR] Critical: New Game button or its containers not found for positioning.");
         return;
@@ -507,38 +259,29 @@ function updateNewGameButtonPosition(isInitialCall = false) {
     }
 
     if (currentAttempts >= maxAttempts) {
-        if (isInitialCall) {
-            console.log('[UI_UPDATE] Game is over on initial load. Moving New Game button to game over location immediately.');
-            if (newGameBtn.parentElement !== gameOverNewGameContainer) {
-                gameOverNewGameContainer.appendChild(newGameBtn);
-            }
-            gameOverNewGameContainer.style.display = 'flex';
+        console.log('[UI_UPDATE] Game is over, scheduling New Game button move to game over location in 5s.');
+        // Ensure the game over container is hidden initially while the timer runs
+        gameOverNewGameContainer.style.display = 'none';
+        // If the button is currently in the initial container, hide that container too,
+        // so the button doesn't remain visible at the bottom during the delay.
+        if (newGameBtn.parentElement === initialNewGameContainer) {
             initialNewGameContainer.style.display = 'none';
-        } else {
-            console.log('[UI_UPDATE] Game is over, scheduling New Game button move to game over location in 5s.');
-            // Ensure the game over container is hidden initially while the timer runs
-            gameOverNewGameContainer.style.display = 'none';
-            // If the button is currently in the initial container, hide that container too,
-            // so the button doesn't remain visible at the bottom during the delay.
-            if (newGameBtn.parentElement === initialNewGameContainer) {
-                initialNewGameContainer.style.display = 'none';
-            }
-
-            newGameButtonTimeoutId = setTimeout(() => {
-                // Re-check the condition in case a new game started very quickly
-                if (currentAttempts >= maxAttempts) {
-                    console.log('[UI_UPDATE_DELAYED] 5s timeout elapsed. Moving New Game button to game over location.');
-                    if (newGameBtn.parentElement !== gameOverNewGameContainer) {
-                        gameOverNewGameContainer.appendChild(newGameBtn);
-                    }
-                    gameOverNewGameContainer.style.display = 'flex';
-                    initialNewGameContainer.style.display = 'none'; // Ensure initial container remains hidden
-                } else {
-                    console.log('[UI_UPDATE_DELAYED] 5s timeout elapsed, but game is no longer over. Button position likely handled by standard logic.');
-                }
-                newGameButtonTimeoutId = null;
-            }, 5000); // 5-second delay
         }
+
+        newGameButtonTimeoutId = setTimeout(() => {
+            // Re-check the condition in case a new game started very quickly
+            if (currentAttempts >= maxAttempts) {
+                console.log('[UI_UPDATE_DELAYED] 5s timeout elapsed. Moving New Game button to game over location.');
+                if (newGameBtn.parentElement !== gameOverNewGameContainer) {
+                    gameOverNewGameContainer.appendChild(newGameBtn);
+                }
+                gameOverNewGameContainer.style.display = 'flex';
+                initialNewGameContainer.style.display = 'none'; // Ensure initial container remains hidden
+            } else {
+                console.log('[UI_UPDATE_DELAYED] 5s timeout elapsed, but game is no longer over. Button position likely handled by standard logic.');
+            }
+            newGameButtonTimeoutId = null;
+        }, 5000); // 5-second delay
     } else {
         console.log('[UI_UPDATE] Game is active, moving New Game button to initial location.');
         if (newGameBtn.parentElement !== initialNewGameContainer) {
@@ -550,66 +293,25 @@ function updateNewGameButtonPosition(isInitialCall = false) {
 }
 
 function updateGuessHistoryDisplay() {
-    const historyContainer = document.getElementById('stats-guess-history');
-    if (!historyContainer) {
-        console.warn('[UI_WARN] Guess history container not found.');
+    const iconsDisplayElement = document.getElementById('stats-guess-history-icons');
+    const durationsDisplayElement = document.getElementById('stats-guess-history-durations');
+
+    if (!iconsDisplayElement || !durationsDisplayElement) {
+        console.warn('[UI_WARN] Guess history display elements (icons or durations) not found.');
         return;
     }
 
-    historyContainer.innerHTML = '';
-
-    if (guessResultsHistory.length === 0) {
-        let emptyLabel = 'Немає історії спроб';
-        if (selectedLanguage === 'en') {
-            emptyLabel = 'No attempts history';
-        } else if (selectedLanguage === 'ru') {
-            emptyLabel = 'Нет истории попыток';
-        } else if (selectedLanguage === 'alien') {
-            emptyLabel = '⊸⍟⊸ ⊸⍟⊸ ⊸⍟⊸';
-        }
-        historyContainer.innerHTML = `<span class="font-mono text-xs text-on-surface-variant/40 tracking-wider">${emptyLabel}</span>`;
-        return;
+    let iconsText = '--';
+    if (guessResultsHistory.length > 0) {
+        iconsText = guessResultsHistory.map(result => (result === 1 ? '✅' : '❌')).join(' ');
     }
+    iconsDisplayElement.textContent = iconsText;
 
-    let durationSuffix = 'с'; 
-    if (selectedLanguage === 'en') {
-        durationSuffix = 's';
-    } else if (selectedLanguage === 'alien') {
-        durationSuffix = '⍊';
+    let durationsText = '--';
+    if (attemptDurations.length > 0) {
+        durationsText = attemptDurations.map(duration => `${duration}`).join(' | ');
     }
-
-    guessResultsHistory.forEach((result, index) => {
-        const duration = attemptDurations[index] !== undefined ? attemptDurations[index] : 0;
-        const column = document.createElement('div');
-        column.className = 'flex flex-col items-center justify-center space-y-1';
-
-        let circleClass = '';
-        let svgIcon = '';
-
-        if (result === 1) {
-            circleClass = 'w-7 h-7 rounded-full flex items-center justify-center bg-neon-cyan text-void-black shadow-[0_0_10px_rgba(0,240,255,0.4)] transition-all';
-            svgIcon = `
-                <svg class="w-4 h-4 stroke-current stroke-2" fill="none" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                </svg>
-            `;
-        } else {
-            circleClass = 'w-7 h-7 rounded-full flex items-center justify-center bg-spirit-violet text-white shadow-[0_0_10px_rgba(188,19,254,0.4)] transition-all';
-            svgIcon = `
-                <svg class="w-3.5 h-3.5 stroke-current stroke-[2.5]" fill="none" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-            `;
-        }
-
-        column.innerHTML = `
-            <div class="${circleClass}">
-                ${svgIcon}
-            </div>
-            <span class="font-mono text-[9px] text-on-surface-variant/80 tracking-tight">${duration}${durationSuffix}</span>
-        `;
-        historyContainer.appendChild(column);
-    });
+    durationsDisplayElement.textContent = durationsText;
 }
 
 
@@ -637,7 +339,7 @@ function updateLanguage() {
     console.log(`[LANGUAGE_UPDATE] Updating language to: ${selectedLanguage}`);
     const texts = translations[selectedLanguage];
     document.getElementById('theme-toggle').textContent = isNight ? texts.themeNight : texts.themeDay;
-    document.getElementById('next-photo-text').textContent = texts.nextPhoto;
+    document.getElementById('next-photo').textContent = texts.nextPhoto;
     document.getElementById('next-person').textContent = texts.nextPerson;
     document.getElementById('check-btn').textContent = texts.checkBtn;
     if (newGameBtn) newGameBtn.textContent = texts.newGame;
@@ -652,32 +354,6 @@ function updateLanguage() {
     document.getElementById('dead-btn').textContent = texts.deceased;
     document.title = selectedLanguage === 'uk' ? 'Гра: Випадкова людина з Wikidata' : selectedLanguage === 'ru' ? 'Игра: Случайный человек из Wikidata' : 'Game: Random Person from Wikidata';
 
-    // Translate diagnostics elements safely
-    const diagSummary = document.getElementById('diag-summary-label');
-    if (diagSummary) diagSummary.textContent = texts.diagnosticsTitle || '📊 Diagnostics & Logs';
-    const clearLogsBtn = document.getElementById('clear-logs-btn');
-    if (clearLogsBtn) clearLogsBtn.textContent = texts.clearLogs || 'Очистити логи';
-    const runDiagnosticsBtn = document.getElementById('run-diag-btn');
-    if (runDiagnosticsBtn) runDiagnosticsBtn.textContent = texts.runDiagnostics || 'Запустити діагностику';
-    const copyLogsBtn = document.getElementById('copy-logs-btn');
-    if (copyLogsBtn) copyLogsBtn.textContent = texts.copyLogs || 'Копіювати логи';
-    const forceReloadBtn = document.getElementById('force-reload-btn');
-    if (forceReloadBtn) forceReloadBtn.textContent = selectedLanguage === 'uk' ? 'Оновити кеш 🔄' : selectedLanguage === 'ru' ? 'Обновить кэш 🔄' : 'Force Reload 🔄';
-
-    // Translate version badge dynamically using APP_VERSION_FALLBACK
-    const versionBadge = document.getElementById('app-version-badge');
-    if (versionBadge) {
-        let currentVersion = APP_VERSION_FALLBACK;
-        
-        let prefix = 'v';
-        if (selectedLanguage === 'uk') prefix = 'Версія v';
-        else if (selectedLanguage === 'ru') prefix = 'Версия v';
-        else if (selectedLanguage === 'en') prefix = 'Version v';
-        else if (selectedLanguage === 'alien') prefix = '⊸⍟⊸ v';
-        
-        versionBadge.textContent = `${prefix}${currentVersion}`;
-    }
-
     updateUI(currentPerson); 
     updateTelegramUserInfoDisplay(); 
 
@@ -689,93 +365,84 @@ function updateLanguage() {
 
 // Обновление текста режима
 function updateModeSelect() {
-    const modeToggle = document.getElementById('mode-toggle');
-    if (modeToggle) {
-        modeToggle.textContent = translations[selectedLanguage][`mode${gameMode.charAt(0).toUpperCase() + gameMode.slice(1)}`];
-    }
+    const modeSelectOptions = document.querySelector('#mode-select .options');
+    modeSelectOptions.innerHTML = `
+        <li data-value="open">${translations[selectedLanguage].modeOpen}</li>
+        <li data-value="closed">${translations[selectedLanguage].modeClosed}</li>
+    `;
+    document.querySelector('#mode-select .selected-option').textContent = translations[selectedLanguage][`mode${gameMode.charAt(0).toUpperCase() + gameMode.slice(1)}`];
 }
 
 // Обновление текста языка
 function updateLanguageSelect() {
     const languageSelectOptions = document.querySelector('#language-select .options');
     languageSelectOptions.innerHTML = `
-        <li data-value="uk" class="px-4 py-2 hover:bg-neon-cyan/20 cursor-pointer text-xs font-headline text-on-surface text-center">Українська</li>
-        <li data-value="ru" class="px-4 py-2 hover:bg-neon-cyan/20 cursor-pointer text-xs font-headline text-on-surface text-center">Русский</li>
-        <li data-value="en" class="px-4 py-2 hover:bg-neon-cyan/20 cursor-pointer text-xs font-headline text-on-surface text-center">English</li>
-        <li data-value="alien" class="px-4 py-2 hover:bg-neon-cyan/20 cursor-pointer text-xs font-headline text-on-surface text-center">👽 ⊸⍟⊸</li>
+        <li data-value="uk">Українська</li>
+        <li data-value="ru">Русский</li>
+        <li data-value="en">English</li>
+        <li data-value="alien">👽 ⊸⍟⊸</li>
     `;
     document.querySelector('#language-select .selected-option').textContent = selectedLanguage === 'uk' ? 'Українська' : selectedLanguage === 'ru' ? 'Русский' : selectedLanguage === 'en' ? 'English' : '👽 ⊸⍟⊸';
 }
 
-// Кастомные выпадающие списки (только для языков)
+// Кастомные выпадающие списки
 document.querySelectorAll('.custom-select').forEach(select => {
     const selectedOption = select.querySelector('.selected-option');
     const options = select.querySelector('.options');
 
-    if (selectedOption && options) {
-        selectedOption.addEventListener('click', () => {
-            const wasOpen = options.style.display !== 'none';
-            options.style.display = wasOpen ? 'none' : 'block';
-            console.log(`[UI_EVENT] Custom select '${select.id}' ${wasOpen ? 'closed' : 'opened'}.`);
-        });
+    selectedOption.addEventListener('click', () => {
+        const wasOpen = options.style.display !== 'none';
+        options.style.display = wasOpen ? 'none' : 'block';
+        console.log(`[UI_EVENT] Custom select '${select.id}' ${wasOpen ? 'closed' : 'opened'}.`);
+    });
 
-        options.addEventListener('click', (e) => {
-            if (e.target.tagName === 'LI') {
-                const value = e.target.getAttribute('data-value');
-                console.log(`[UI_EVENT] Option selected in '${select.id}': Value = ${value}, Text = ${e.target.textContent}`);
-                if (select.id === 'language-select') {
-                    const oldLanguage = selectedLanguage;
-                    selectedLanguage = value;
-                    localStorage.setItem('language', selectedLanguage);
-                    console.log(`[STATE_CHANGE] Language changed from ${oldLanguage} to ${selectedLanguage}. Saved to localStorage.`);
-                    if (oldLanguage !== selectedLanguage) {
-                        sendGAEvent('language_changed', { new_language: selectedLanguage }); // Changed from new_lang
-                    }
-                    updateLanguage();
+    options.addEventListener('click', (e) => {
+        if (e.target.tagName === 'LI') {
+            const value = e.target.getAttribute('data-value');
+            console.log(`[UI_EVENT] Option selected in '${select.id}': Value = ${value}, Text = ${e.target.textContent}`);
+            if (select.id === 'language-select') {
+                const oldLanguage = selectedLanguage;
+                selectedLanguage = value;
+                safeLocalStorage.setItem('language', selectedLanguage);
+                console.log(`[STATE_CHANGE] Language changed from ${oldLanguage} to ${selectedLanguage}. Saved to safeLocalStorage.`);
+                if (oldLanguage !== selectedLanguage) {
+                    sendGAEvent('language_changed', { new_language: selectedLanguage }); // Changed from new_lang
                 }
-                selectedOption.textContent = e.target.textContent;
-                options.style.display = 'none';
+                updateLanguage();
+            } else if (select.id === 'mode-select') {
+                const oldMode = gameMode;
+                gameMode = value;
+                safeLocalStorage.setItem('mode', gameMode);
+                console.log(`[STATE_CHANGE] Game mode changed from ${oldMode} to ${gameMode}. Saved to safeLocalStorage.`);
+                if (oldMode !== gameMode) {
+                    sendGAEvent('game_mode_changed', { new_game_mode: gameMode });
+                }
+                updateModeVisibility();
+                updateCheckButtonState();
+                updateModeSelect();
             }
-        });
+            selectedOption.textContent = e.target.textContent;
+            options.style.display = 'none';
+        }
+    });
 
-        document.addEventListener('click', (e) => {
-            if (!select.contains(e.target) && options.style.display !== 'none') {
-                options.style.display = 'none';
-            }
-        });
-    }
+    document.addEventListener('click', (e) => {
+        if (!select.contains(e.target) && options.style.display !== 'none') {
+            options.style.display = 'none';
+        }
+    });
 });
 
-// Кнопка прямого переключения режима игры
-const modeToggleBtn = document.getElementById('mode-toggle');
-if (modeToggleBtn) {
-    modeToggleBtn.addEventListener('click', () => {
-        const oldMode = gameMode;
-        gameMode = gameMode === 'open' ? 'closed' : 'open';
-        localStorage.setItem('mode', gameMode);
-        console.log(`[STATE_CHANGE] Game mode toggled from ${oldMode} to ${gameMode}. Saved to localStorage.`);
-        sendGAEvent('game_mode_changed', { new_game_mode: gameMode });
-        updateModeVisibility();
-        updateCheckButtonState();
-        updateModeSelect();
-    });
-}
-
 // Переключение темы
-const themeToggleBtn = document.getElementById('theme-toggle');
-if (themeToggleBtn) {
-    themeToggleBtn.addEventListener('click', () => {
-        isNight = !isNight;
-        const newTheme = isNight ? 'night' : 'day';
-        if (document.body) {
-            document.body.classList.toggle('day', !isNight);
-        }
-        localStorage.setItem('theme', newTheme);
-        console.log(`[THEME_CHANGE] Theme changed to: ${newTheme}. Saved to localStorage.`);
-        sendGAEvent('theme_changed', { new_theme: newTheme });
-        updateLanguage(); // To update button text
-    });
-}
+document.getElementById('theme-toggle').addEventListener('click', () => {
+    isNight = !isNight;
+    const newTheme = isNight ? 'night' : 'day';
+    document.body.classList.toggle('day', !isNight);
+    safeLocalStorage.setItem('theme', newTheme);
+    console.log(`[THEME_CHANGE] Theme changed to: ${newTheme}. Saved to safeLocalStorage.`);
+    sendGAEvent('theme_changed', { new_theme: newTheme });
+    updateLanguage(); // To update button text
+});
 
 // Обновление видимости элементов в зависимости от режима
 function updateModeVisibility() {
@@ -791,12 +458,12 @@ function updateModeVisibility() {
     const personImage = document.getElementById('person-image');
     const overlay = document.getElementById('overlay');
 
-    if (statusButtons) statusButtons.style.display = 'none';
-    if (genderButtons) genderButtons.style.display = 'none';
+    statusButtons.style.display = 'none';
+    genderButtons.style.display = 'none';
     if (checkBtnElement) checkBtnElement.style.display = 'none';
     console.log('[UI_UPDATE_MODE] Status, Gender, and Check buttons initially hidden.');
 
-    const imageIsReady = personImage ? personImage.classList.contains('loaded') : false;
+    const imageIsReady = personImage.classList.contains('loaded');
     const gameIsActive = currentAttempts < maxAttempts;
     const canMakeGuess = !hasChecked;
 
@@ -806,18 +473,18 @@ function updateModeVisibility() {
         console.log('[UI_UPDATE_MODE] Conditions met for showing buttons, starting 3s timeout.');
         buttonVisibilityTimeoutId = setTimeout(() => {
             console.log('[UI_TIMEOUT_ELAPSED] 3s timeout elapsed. Showing buttons.');
-            if (statusButtons) statusButtons.style.display = 'flex';
+            statusButtons.style.display = 'flex';
             if (checkBtnElement) {
                 checkBtnElement.style.display = 'inline-block';
                 updateCheckButtonState(); 
-                console.log('[UI_UPDATE_MODE_TIMEOUT] Check button shown and state updated.');
+                 console.log('[UI_UPDATE_MODE_TIMEOUT] Check button shown and state updated.');
             }
 
             if (gameMode === 'closed') {
-                if (genderButtons) genderButtons.style.display = 'flex';
-                console.log('[UI_UPDATE_MODE_TIMEOUT] Closed mode: Gender and Status buttons shown.');
+                genderButtons.style.display = 'flex';
+                 console.log('[UI_UPDATE_MODE_TIMEOUT] Closed mode: Gender and Status buttons shown.');
             } else {
-                if (genderButtons) genderButtons.style.display = 'none'; 
+                genderButtons.style.display = 'none'; 
                 console.log('[UI_UPDATE_MODE_TIMEOUT] Open mode: Status buttons shown, Gender buttons hidden.');
             }
             buttonVisibilityTimeoutId = null;
@@ -828,27 +495,15 @@ function updateModeVisibility() {
 
     if (gameMode === 'closed') {
         if (hasChecked) { 
-            if (overlay) overlay.classList.add('hidden');
-            if (personImage) {
-                personImage.style.opacity = '';
-                personImage.style.visibility = '';
-            }
-            console.log('[UI_UPDATE_MODE_OVERLAY] Closed mode, checked: Overlay hidden, Image shown.');
+            overlay.classList.add('hidden');
+            console.log('[UI_UPDATE_MODE_OVERLAY] Closed mode, checked: Overlay hidden.');
         } else { 
-            if (overlay) overlay.classList.remove('hidden');
-            if (personImage) {
-                personImage.style.opacity = '0';
-                personImage.style.visibility = 'hidden';
-            }
-            console.log('[UI_UPDATE_MODE_OVERLAY] Closed mode, not checked: Overlay shown, Image completely hidden.');
+            overlay.classList.remove('hidden');
+            console.log('[UI_UPDATE_MODE_OVERLAY] Closed mode, not checked: Overlay shown.');
         }
-    } else {
-        if (overlay) overlay.classList.add('hidden');
-        if (personImage) {
-            personImage.style.opacity = '';
-            personImage.style.visibility = '';
-        }
-        console.log('[UI_UPDATE_MODE_OVERLAY] Open mode: Overlay hidden, Image shown.');
+    } else { 
+        overlay.classList.add('hidden');
+        console.log('[UI_UPDATE_MODE_OVERLAY] Open mode: Overlay hidden.');
     }
 }
 
@@ -980,78 +635,60 @@ async function isBlackAndWhite(imageUrl) {
         const img = new Image();
         img.crossOrigin = 'Anonymous'; 
 
-        const analyzeImage = (imageToAnalyze, sourceUrl) => {
-            try {
-                const canvas = document.createElement('canvas');
-                canvas.width = 100; 
-                canvas.height = 100;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(imageToAnalyze, 0, 0, 100, 100);
-
-                const imageData = ctx.getImageData(0, 0, 100, 100).data;
-                let rSum = 0, gSum = 0, bSum = 0;
-                let rSquareSum = 0, gSquareSum = 0, bSquareSum = 0;
-                let saturationSum = 0;
-                let count = 0;
-
-                for (let i = 0; i < imageData.length; i += 4) {
-                    const r = imageData[i];
-                    const g = imageData[i + 1];
-                    const b = imageData[i + 2];
-                    rSum += r;
-                    gSum += g;
-                    bSum += b;
-                    rSquareSum += r * r;
-                    gSquareSum += g * g;
-                    bSquareSum += b * b;
-
-                    const [, sVal] = rgbToHsl(r, g, b);
-                    saturationSum += sVal;
-                    count++;
-                }
-
-                const rMean = rSum / count;
-                const gMean = gSum / count;
-                const bMean = bSum / count;
-                const rStdDev = Math.sqrt((rSquareSum / count) - (rMean * rMean));
-                const gStdDev = Math.sqrt((gSquareSum / count) - (gMean * gMean));
-                const bStdDev = Math.sqrt((bSquareSum / count) - (bMean * bMean));
-                const meanSaturation = saturationSum / count;
-
-                const isBW = rStdDev < 20 && gStdDev < 20 && bStdDev < 20 && meanSaturation < 0.2;
-                console.log(`[IMAGE_CHECK_BW] Result for ${cacheKey} (via ${sourceUrl}): ${isBW ? 'black-and-white' : 'color'} ` +
-                            `(R_stdDev:${rStdDev.toFixed(2)}, G_stdDev:${gStdDev.toFixed(2)}, B_stdDev:${bStdDev.toFixed(2)}, Mean Saturation:${(meanSaturation * 100).toFixed(2)}%)`);
-                
-                rgbHslCache[cacheKey] = isBW; 
-                localStorage.setItem('rgbHslCache', JSON.stringify(rgbHslCache));
-                console.log('[CACHE_UPDATE] rgbHslCache updated in localStorage.');
-                
-                resolve(isBW);
-            } catch (e) {
-                console.error(`[IMAGE_CHECK_BW_CANVAS_ERROR] Canvas analysis failed for ${sourceUrl}:`, e);
-                resolve(false);
-            }
-        };
-
+        const proxyForBWCheck = `https://images.weserv.nl/?url=${encodeURIComponent(imageUrl)}&w=100&h=100&fit=cover&output=jpg`; 
+        
         img.onload = () => {
-            analyzeImage(img, imageUrl);
+            const canvas = document.createElement('canvas');
+            canvas.width = 100; 
+            canvas.height = 100;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, 100, 100);
+
+            const imageData = ctx.getImageData(0, 0, 100, 100).data;
+            let rSum = 0, gSum = 0, bSum = 0;
+            let rSquareSum = 0, gSquareSum = 0, bSquareSum = 0;
+            let saturationSum = 0;
+            let count = 0;
+
+            for (let i = 0; i < imageData.length; i += 4) {
+                const r = imageData[i];
+                const g = imageData[i + 1];
+                const b = imageData[i + 2];
+                rSum += r;
+                gSum += g;
+                bSum += b;
+                rSquareSum += r * r;
+                gSquareSum += g * g;
+                bSquareSum += b * b;
+
+                const [, sVal] = rgbToHsl(r, g, b);
+                saturationSum += sVal;
+                count++;
+            }
+
+            const rMean = rSum / count;
+            const gMean = gSum / count;
+            const bMean = bSum / count;
+            const rStdDev = Math.sqrt((rSquareSum / count) - (rMean * rMean));
+            const gStdDev = Math.sqrt((gSquareSum / count) - (gMean * gMean));
+            const bStdDev = Math.sqrt((bSquareSum / count) - (bMean * bMean));
+            const meanSaturation = saturationSum / count;
+
+            const isBW = rStdDev < 20 && gStdDev < 20 && bStdDev < 20 && meanSaturation < 0.2;
+            console.log(`[IMAGE_CHECK_BW] Result for ${cacheKey} (via proxy ${proxyForBWCheck}): ${isBW ? 'black-and-white' : 'color'} ` +
+                        `(R_stdDev:${rStdDev.toFixed(2)}, G_stdDev:${gStdDev.toFixed(2)}, B_stdDev:${bStdDev.toFixed(2)}, Mean Saturation:${(meanSaturation * 100).toFixed(2)}%)`);
+            
+            rgbHslCache[cacheKey] = isBW; 
+            safeLocalStorage.setItem('rgbHslCache', JSON.stringify(rgbHslCache));
+            console.log('[CACHE_UPDATE] rgbHslCache updated in safeLocalStorage.');
+            
+            resolve(isBW);
         };
         img.onerror = () => {
-            console.warn(`[IMAGE_CHECK_BW_DIRECT_ERROR] Direct load failed for B&W check: ${imageUrl}. Trying proxy fallback...`);
-            
-            const proxyForBWCheck = `https://images.weserv.nl/?url=${encodeURIComponent(imageUrl)}&w=100&h=100&fit=cover&output=jpg`; 
-            const proxyImg = new Image();
-            proxyImg.crossOrigin = 'Anonymous';
-            proxyImg.onload = () => {
-                analyzeImage(proxyImg, proxyForBWCheck);
-            };
-            proxyImg.onerror = () => {
-                console.error(`[IMAGE_CHECK_BW_ALL_ERROR] Direct and Proxy loaded failed for B&W check: ${imageUrl}`);
-                resolve(false);
-            };
-            proxyImg.src = proxyForBWCheck;
+            console.error(`[IMAGE_CHECK_BW_ERROR] Failed to load image via proxy ${proxyForBWCheck} for B&W analysis of ${cacheKey}`);
+            resolve(false); 
         };
-        img.src = imageUrl;
+        img.src = proxyForBWCheck;
     });
 }
 
@@ -1079,265 +716,43 @@ async function getCommonsImageUrl(fileName) {
 }
 
 async function loadImageWithFallback(url, element) {
-    console.log(`[IMAGE_LOAD] Attempting to load image directly: ${url}`);
+    console.log(`[IMAGE_LOAD_PROXY] Attempting to load image via proxy: ${url}`);
     element.classList.remove('loaded');
+    const proxyUrl = `https://images.weserv.nl/?url=${encodeURIComponent(url)}`;
         
     return new Promise((resolve, reject) => {
-        let isCompleted = false;
         const cleanup = () => {
             element.onload = null;
             element.onerror = null;
         };
 
         element.onload = () => {
-            if (isCompleted) return;
-            isCompleted = true;
             element.style.opacity = ''; 
             element.classList.add('loaded'); 
-            console.log(`[IMAGE_LOAD_SUCCESS] Image loaded successfully: ${url}`);
+            console.log(`[IMAGE_LOAD_PROXY_SUCCESS] Image loaded successfully via proxy: ${proxyUrl}`);
             cleanup();
             resolve();
         };
-
         element.onerror = () => {
-            if (isCompleted) return;
-            console.warn(`[IMAGE_LOAD_DIRECT_ERROR] Direct image load failed for ${url}. Trying proxy fallback...`);
-            
-            const proxyUrl = `https://images.weserv.nl/?url=${encodeURIComponent(url)}`;
-            
-            element.onload = () => {
-                isCompleted = true;
-                element.style.opacity = ''; 
-                element.classList.add('loaded'); 
-                console.log(`[IMAGE_LOAD_PROXY_SUCCESS] Image loaded successfully via proxy: ${proxyUrl}`);
-                cleanup();
-                resolve();
-            };
-            
-            element.onerror = () => {
-                isCompleted = true;
-                console.error(`[IMAGE_LOAD_PROXY_ERROR] Proxy image load also failed: ${proxyUrl}. Falling back to placeholder.`);
-                element.style.opacity = ''; 
-                element.src = 'https://via.placeholder.com/300'; 
-                element.classList.add('loaded'); 
-                cleanup();
-                reject(new Error(`Direct and proxy image load failed for ${url}`));
-            };
-            
-            element.src = proxyUrl;
+            console.error(`[IMAGE_LOAD_PROXY_ERROR] Proxy image load failed: ${proxyUrl}. Falling back to placeholder.`);
+            element.style.opacity = ''; 
+            element.src = 'https://via.placeholder.com/300'; 
+            element.classList.add('loaded'); 
+            cleanup();
+            reject(new Error(`Proxy image load failed for ${url}`));
         };
         
-        element.src = url;
+        element.src = proxyUrl;
     });
 }
 
-const WIKIDATA_QUERY_TIMEOUT_MS = 15000; 
-let sparqlQueuePromise = Promise.resolve();
-
-const offlinePeople = [
-    // Male, Alive
-    {
-        person: { value: "https://en.wikipedia.org/wiki/Elon_Musk" },
-        personLabel: { value: "Elon Musk" },
-        image: { value: "https://upload.wikimedia.org/wikipedia/commons/c/cb/Elon_Musk_Royal_Society_cropped.jpg" },
-        gender: { value: "http://www.wikidata.org/entity/Q6581097" },
-        birthDate: { value: "1971-06-28T00:00:00Z" },
-        isOfflineFallback: true,
-        gender_string: "male",
-        status_string: "alive"
-    },
-    {
-        person: { value: "https://en.wikipedia.org/wiki/Volodymyr_Zelenskyy" },
-        personLabel: { value: "Volodymyr Zelenskyy" },
-        image: { value: "https://upload.wikimedia.org/wikipedia/commons/9/9c/Volodymyr_Zelenskyy_Kyiv_2022_%28cropped%29.jpg" },
-        gender: { value: "http://www.wikidata.org/entity/Q6581097" },
-        birthDate: { value: "1978-01-25T00:00:00Z" },
-        isOfflineFallback: true,
-        gender_string: "male",
-        status_string: "alive"
-    },
-    {
-        person: { value: "https://en.wikipedia.org/wiki/Vitali_Klitschko" },
-        personLabel: { value: "Vitali Klitschko" },
-        image: { value: "https://upload.wikimedia.org/wikipedia/commons/c/cb/Vitali_Klitschko_June_2015.jpg" },
-        gender: { value: "http://www.wikidata.org/entity/Q6581097" },
-        birthDate: { value: "1971-07-19T00:00:00Z" },
-        isOfflineFallback: true,
-        gender_string: "male",
-        status_string: "alive"
-    },
-    {
-        person: { value: "https://en.wikipedia.org/wiki/Keanu_Reeves" },
-        personLabel: { value: "Keanu Reeves" },
-        image: { value: "https://upload.wikimedia.org/wikipedia/commons/3/33/Keanu_Reeves_2014_cropped.jpg" },
-        gender: { value: "http://www.wikidata.org/entity/Q6581097" },
-        birthDate: { value: "1964-09-02T00:00:00Z" },
-        isOfflineFallback: true,
-        gender_string: "male",
-        status_string: "alive"
-    },
-    // Male, Deceased
-    {
-        person: { value: "https://en.wikipedia.org/wiki/Albert_Einstein" },
-        personLabel: { value: "Albert Einstein" },
-        image: { value: "https://upload.wikimedia.org/wikipedia/commons/d/d3/Albert_Einstein_Head.jpg" },
-        gender: { value: "http://www.wikidata.org/entity/Q6581097" },
-        birthDate: { value: "1879-03-14T00:00:00Z" },
-        deathDate: { value: "1955-04-18T00:00:00Z" },
-        isOfflineFallback: true,
-        gender_string: "male",
-        status_string: "deceased"
-    },
-    {
-        person: { value: "https://en.wikipedia.org/wiki/Taras_Shevchenko" },
-        personLabel: { value: "Taras Shevchenko" },
-        image: { value: "https://upload.wikimedia.org/wikipedia/commons/a/af/Tarass_Chevtchenko_1859.jpg" },
-        gender: { value: "http://www.wikidata.org/entity/Q6581097" },
-        birthDate: { value: "1814-03-09T00:00:00Z" },
-        deathDate: { value: "1861-03-10T00:00:00Z" },
-        isOfflineFallback: true,
-        gender_string: "male",
-        status_string: "deceased"
-    },
-    {
-        person: { value: "https://en.wikipedia.org/wiki/Steve_Jobs" },
-        personLabel: { value: "Steve Jobs" },
-        image: { value: "https://upload.wikimedia.org/wikipedia/commons/d/dc/Steve_Jobs_Headshot_2010-CROP.jpg" },
-        gender: { value: "http://www.wikidata.org/entity/Q6581097" },
-        birthDate: { value: "1955-02-24T00:00:00Z" },
-        deathDate: { value: "2011-10-05T00:00:00Z" },
-        isOfflineFallback: true,
-        gender_string: "male",
-        status_string: "deceased"
-    },
-    {
-        person: { value: "https://en.wikipedia.org/wiki/Stephen_Hawking" },
-        personLabel: { value: "Stephen Hawking" },
-        image: { value: "https://upload.wikimedia.org/wikipedia/commons/e/eb/Stephen_Hawking.StarChild.jpg" },
-        gender: { value: "http://www.wikidata.org/entity/Q6581097" },
-        birthDate: { value: "1942-01-08T00:00:00Z" },
-        deathDate: { value: "2018-03-14T00:00:00Z" },
-        isOfflineFallback: true,
-        gender_string: "male",
-        status_string: "deceased"
-    },
-    // Female, Alive
-    {
-        person: { value: "https://en.wikipedia.org/wiki/Lina_Kostenko" },
-        personLabel: { value: "Lina Kostenko" },
-        image: { value: "https://upload.wikimedia.org/wikipedia/commons/f/fb/Lina_Kostenko_cropped.jpg" },
-        gender: { value: "http://www.wikidata.org/entity/Q6581072" },
-        birthDate: { value: "1930-03-19T00:00:00Z" },
-        isOfflineFallback: true,
-        gender_string: "female",
-        status_string: "alive"
-    },
-    {
-        person: { value: "https://en.wikipedia.org/wiki/Taylor_Swift" },
-        personLabel: { value: "Taylor Swift" },
-        image: { value: "https://upload.wikimedia.org/wikipedia/commons/b/b5/191125_Taylor_Swift_at_the_2019_American_Music_Awards_%28cropped%29.jpg" },
-        gender: { value: "http://www.wikidata.org/entity/Q6581072" },
-        birthDate: { value: "1989-12-13T00:00:00Z" },
-        isOfflineFallback: true,
-        gender_string: "female",
-        status_string: "alive"
-    },
-    {
-        person: { value: "https://en.wikipedia.org/wiki/Ruslana" },
-        personLabel: { value: "Ruslana" },
-        image: { value: "https://upload.wikimedia.org/wikipedia/commons/3/30/Ruslana_Lyzhychko_2013-12-04_01.jpg" },
-        gender: { value: "http://www.wikidata.org/entity/Q6581072" },
-        birthDate: { value: "1973-05-24T00:00:00Z" },
-        isOfflineFallback: true,
-        gender_string: "female",
-        status_string: "alive"
-    },
-    {
-        person: { value: "https://en.wikipedia.org/wiki/Angela_Merkel" },
-        personLabel: { value: "Angela Merkel" },
-        image: { value: "https://upload.wikimedia.org/wikipedia/commons/2/2d/Angela_Merkel_2019_cropped.jpg" },
-        gender: { value: "http://www.wikidata.org/entity/Q6581072" },
-        birthDate: { value: "1954-07-17T00:00:00Z" },
-        isOfflineFallback: true,
-        gender_string: "female",
-        status_string: "alive"
-    },
-    // Female, Deceased
-    {
-        person: { value: "https://en.wikipedia.org/wiki/Marie_Curie" },
-        personLabel: { value: "Marie Curie" },
-        image: { value: "https://upload.wikimedia.org/wikipedia/commons/c/c8/Marie_Curie_c1920.jpg" },
-        gender: { value: "http://www.wikidata.org/entity/Q6581072" },
-        birthDate: { value: "1867-11-07T00:00:00Z" },
-        deathDate: { value: "1934-07-04T00:00:00Z" },
-        isOfflineFallback: true,
-        gender_string: "female",
-        status_string: "deceased"
-    },
-    {
-        person: { value: "https://en.wikipedia.org/wiki/Lesya_Ukrainka" },
-        personLabel: { value: "Lesya Ukrainka" },
-        image: { value: "https://upload.wikimedia.org/wikipedia/commons/d/dd/Lesya_Ukrainka.jpg" },
-        gender: { value: "http://www.wikidata.org/entity/Q6581072" },
-        birthDate: { value: "1871-02-25T00:00:00Z" },
-        deathDate: { value: "1913-08-01T00:00:00Z" },
-        isOfflineFallback: true,
-        gender_string: "female",
-        status_string: "deceased"
-    },
-    {
-        person: { value: "https://en.wikipedia.org/wiki/Elizabeth_II" },
-        personLabel: { value: "Elizabeth II" },
-        image: { value: "https://upload.wikimedia.org/wikipedia/commons/b/b6/Queen_Elizabeth_II_in_March_2015.jpg" },
-        gender: { value: "http://www.wikidata.org/entity/Q6581072" },
-        birthDate: { value: "1926-04-21T00:00:00Z" },
-        deathDate: { value: "2022-09-08T00:00:00Z" },
-        isOfflineFallback: true,
-        gender_string: "female",
-        status_string: "deceased"
-    },
-    {
-        person: { value: "https://en.wikipedia.org/wiki/Marilyn_Monroe" },
-        personLabel: { value: "Marilyn Monroe" },
-        image: { value: "https://upload.wikimedia.org/wikipedia/commons/0/0a/Marilyn_Monroe_photo_portait_Cabinet_Card_cropped.jpg" },
-        gender: { value: "http://www.wikidata.org/entity/Q6581072" },
-        birthDate: { value: "1926-06-01T00:00:00Z" },
-        deathDate: { value: "1962-08-05T00:00:00Z" },
-        isOfflineFallback: true,
-        gender_string: "female",
-        status_string: "deceased"
-    }
-];
-
-function getOfflineFallbackPerson(category) {
-    const gender = category?.gender || 'male';
-    const status = category?.status || 'alive';
-    const matches = offlinePeople.filter(p => p.gender_string === gender && p.status_string === status);
-    if (matches.length > 0) {
-        const selected = matches[Math.floor(Math.random() * matches.length)];
-        console.log(`[OFFLINE_FALLBACK] Selected offline backup candidate: ${selected.personLabel.value} (${gender}-${status})`);
-        return selected;
-    }
-    const selected = offlinePeople[Math.floor(Math.random() * offlinePeople.length)];
-    console.log(`[OFFLINE_FALLBACK] Selected random backup candidate: ${selected.personLabel.value}`);
-    return selected;
-}
+const WIKIDATA_QUERY_TIMEOUT_MS = 120000; 
 
 async function fetchPersonData(useRandom = false, category = null) {
-    const categoryKey = `${category?.gender || 'any'}-${category?.status || 'any'}`;
-    try {
-        return await fetchPersonDataInner(useRandom, category);
-    } catch (err) {
-        console.warn(`[WIKIDATA_FETCH_ERROR_FALLBACK] Wikidata fetch failed for ${categoryKey}: ${err.message}. Invoking offline fallback...`);
-        return getOfflineFallbackPerson(category);
-    }
-}
-
-async function fetchPersonDataInner(useRandom = false, category = null) {
     const start = performance.now();
     let query;
     let attempts = 0;
-    const maxQueryAttempts = 2;
+    const maxQueryAttempts = 5;
     const categoryKey = `${category?.gender || 'any'}-${category?.status || 'any'}`;
     const cacheKey = `${useRandom}-${categoryKey}`;
     
@@ -1353,128 +768,116 @@ async function fetchPersonDataInner(useRandom = false, category = null) {
             delete wikidataCache[cacheKey]; 
         }
     }
-
     console.log(`[WIKIDATA_FETCH] No valid cache hit for ${cacheKey}, querying Wikidata.`);
 
-    const currentPromise = sparqlQueuePromise;
-    let resolveQueue;
-    sparqlQueuePromise = new Promise(resolve => { resolveQueue = resolve; });
-    
-    try {
-        await currentPromise;
-    } catch (err) {}
+    const genderFilter = category?.gender === 'male' ? 'FILTER(?gender = wd:Q6581097)' :
+                        category?.gender === 'female' ? 'FILTER(?gender = wd:Q6581072)' :
+                        'FILTER(?gender IN (wd:Q6581097, wd:Q6581072))';
+    const statusFilter = category?.status === 'alive' ? 'FILTER NOT EXISTS { ?person wdt:P570 ?deathDate }' :
+                        category?.status === 'deceased' ? '?person wdt:P570 ?deathDate' :
+                        'OPTIONAL { ?person wdt:P570 ?deathDate }';
+    const birthDateFilter = `FILTER(?birthDate >= "${settings.birthYearFilter}-01-01T00:00:00Z"^^xsd:dateTime).`;
+    const countryFilter = settings.selectedCountries === 'all' ? '' :
+                         `FILTER(?country IN (${settings.selectedCountries
+                             .map(code => `wd:${settings.countryMap[code]}`)
+                             .filter(id => id)
+                             .join(', ')})).`;
 
-    try {
-        const genderFilter = category?.gender === 'male' ? 'FILTER(?gender = wd:Q6581097)' :
-                            category?.gender === 'female' ? 'FILTER(?gender = wd:Q6581072)' :
-                            'FILTER(?gender IN (wd:Q6581097, wd:Q6581072))';
-        const statusFilter = category?.status === 'alive' ? 'FILTER NOT EXISTS { ?person wdt:P570 ?deathDate }' :
-                            category?.status === 'deceased' ? '?person wdt:P570 ?deathDate' :
-                            'OPTIONAL { ?person wdt:P570 ?deathDate }';
-        const birthDateFilter = `FILTER(?birthDate >= "${settings.birthYearFilter}-01-01T00:00:00Z"^^xsd:dateTime).`;
-        const countryFilter = settings.selectedCountries === 'all' ? '' :
-                             `FILTER(?country IN (${settings.selectedCountries
-                                 .map(code => `wd:${settings.countryMap[code]}`)
-                                 .filter(id => id)
-                                 .join(', ')})).`;
-
-        while (attempts < maxQueryAttempts) {
-            attempts++;
-            const offset = settings.dynamicOffset ? Math.floor(Math.random() * settings.maxOffset) : 0;
-            query = `
-                SELECT ?person ?personLabel ?image ?country ?gender ?deathDate ?birthDate
-                WHERE {
-                    ?person wdt:P31 wd:Q5;
-                            wdt:P18 ?image;
-                            wdt:P21 ?gender;
-                            wdt:P569 ?birthDate.
-                    ${settings.strictCountryFilter ? '' : 'OPTIONAL'} { ?person wdt:P27 ?country }.
-                    ${genderFilter}
-                    ${statusFilter}
-                    ${birthDateFilter}
-                    ${settings.selectedCountries !== 'all' && settings.strictCountryFilter ? countryFilter : ''}
-                    ?person rdfs:label ?personLabel.
-                    FILTER (LANG(?personLabel) = "en").
-                }
-                OFFSET ${offset}
-                LIMIT ${settings.maxPeople}
-            `;
-
-            const endpoint = 'https://query.wikidata.org/sparql';
-            const url = `${endpoint}?query=${encodeURIComponent(query)}&format=json&nocache=${Date.now()}`;
-
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => {
-                console.warn(`[WIKIDATA_QUERY_TIMEOUT_EVENT] Wikidata query attempt ${attempts}/${maxQueryAttempts} for category ${categoryKey} is taking too long and will be aborted.`);
-                controller.abort();
-            }, WIKIDATA_QUERY_TIMEOUT_MS);
-
-            try {
-                const response = await fetch(url, {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/sparql-results+json'
-                    },
-                    signal: controller.signal
-                });
-
-                clearTimeout(timeoutId);
-                if (!response.ok) throw new Error(`Wikidata API error: ${response.status} ${response.statusText}`);
-                const data = await response.json();
-                const list = data.results && data.results.bindings; 
-                const duration = (performance.now() - start).toFixed(0);
-                
-                if (!list || !list.length) { 
-                    console.warn(`[WIKIDATA_QUERY_WARN] No results or invalid list for category ${categoryKey}, attempt ${attempts}/${maxQueryAttempts}. Response:`, data);
-                    if (attempts === maxQueryAttempts) throw new Error(`No person found for category ${categoryKey} after ${maxQueryAttempts} query attempts with different offsets.`);
-                    continue; 
-                }
-                console.log(`[WIKIDATA_QUERY_SUCCESS] Attempt ${attempts}/${maxQueryAttempts} successful for category ${categoryKey}. Found ${list.length} results. Time: ${duration}ms`);
-
-
-                wikidataCache[cacheKey] = (wikidataCache[cacheKey] || []).concat(list).slice(-100); 
-                localStorage.setItem('wikidataCache', JSON.stringify(wikidataCache));
-                console.log('[CACHE_UPDATE] wikidataCache updated in localStorage.');
-
-                const randomPerson = list[Math.floor(Math.random() * list.length)];
-                if (randomPerson && randomPerson.personLabel && randomPerson.personLabel.value && randomPerson.image && randomPerson.image.value && randomPerson.gender && randomPerson.birthDate && randomPerson.person && randomPerson.person.value) {
-                    return randomPerson;
-                } else {
-                     console.warn(`[WIKIDATA_QUERY_WARN] Randomly selected person is invalid, attempt ${attempts}/${maxQueryAttempts}. Person:`, randomPerson);
-                     if (attempts === maxQueryAttempts) throw new Error(`Selected invalid person on final attempt for category ${categoryKey}.`);
-                     continue; 
-                }
-
-            } catch (error) {
-                clearTimeout(timeoutId);
-                const isTimeoutAbort = error.name === 'AbortError';
-
-                if (isTimeoutAbort) {
-                } else {
-                    if (error.message && error.message.includes('Failed to fetch')) {
-                        console.warn(`[WIKIDATA_QUERY_WARN] Query attempt ${attempts}/${maxQueryAttempts} for category ${categoryKey} failed with fetch issue. Retrying. Error: ${error.message}`);
-                    } else {
-                        console.error(`[WIKIDATA_QUERY_ERROR] Query attempt ${attempts}/${maxQueryAttempts} for category ${categoryKey} failed. Retrying. Error: ${error.message}`);
-                    }
-                }
-
-                if (isTimeoutAbort || attempts >= maxQueryAttempts) {
-                    let rethrowMessage;
-                    if (isTimeoutAbort) {
-                        rethrowMessage = `Wikidata query for person data (category: ${categoryKey}) timed out on attempt ${attempts}/${maxQueryAttempts}.`;
-                    } else { 
-                        rethrowMessage = `Failed to fetch person data (category: ${categoryKey}) after ${maxQueryAttempts} attempts. Last error on attempt ${attempts}: ${error.message}`;
-                    }
-                    console.error(`[WIKIDATA_FETCH_FINAL_ERROR] ${rethrowMessage}`);
-                    throw new Error(rethrowMessage);
-                }
-                console.log(`[WIKIDATA_FETCH_RETRY] Retrying query for ${categoryKey}, attempt ${attempts + 1}/${maxQueryAttempts}...`);
+    while (attempts < maxQueryAttempts) {
+        attempts++;
+        const offset = settings.dynamicOffset ? Math.floor(Math.random() * settings.maxOffset) : 0;
+        query = `
+            SELECT ?person ?personLabel ?image ?country ?gender ?deathDate ?birthDate
+            WHERE {
+                ?person wdt:P31 wd:Q5;
+                        wdt:P18 ?image;
+                        wdt:P21 ?gender;
+                        wdt:P569 ?birthDate.
+                ${settings.strictCountryFilter ? '' : 'OPTIONAL'} { ?person wdt:P27 ?country }.
+                ${genderFilter}
+                ${statusFilter}
+                ${birthDateFilter}
+                ${settings.selectedCountries !== 'all' && settings.strictCountryFilter ? countryFilter : ''}
+                ?person rdfs:label ?personLabel.
+                FILTER (LANG(?personLabel) = "en").
             }
+            OFFSET ${offset}
+            LIMIT ${settings.maxPeople}
+        `;
+
+        const endpoint = 'https://query.wikidata.org/sparql';
+        const url = `${endpoint}?query=${encodeURIComponent(query)}&format=json&nocache=${Date.now()}`;
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => {
+            console.warn(`[WIKIDATA_QUERY_TIMEOUT_EVENT] Wikidata query attempt ${attempts}/${maxQueryAttempts} for category ${categoryKey} is taking too long and will be aborted.`);
+            controller.abort();
+        }, WIKIDATA_QUERY_TIMEOUT_MS);
+
+        try {
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/sparql-results+json',
+                    'User-Agent': 'SimplePhotoApp/1.0 (https://romanmod.github.io/personseei/; krv.mod@gmail.com)',
+                },
+                signal: controller.signal
+            });
+
+            clearTimeout(timeoutId);
+            if (!response.ok) throw new Error(`Wikidata API error: ${response.status} ${response.statusText}`);
+            const data = await response.json();
+            const list = data.results && data.results.bindings; 
+            const duration = (performance.now() - start).toFixed(0);
+            
+            if (!list || !list.length) { 
+                console.warn(`[WIKIDATA_QUERY_WARN] No results or invalid list for category ${categoryKey}, attempt ${attempts}/${maxQueryAttempts}. Response:`, data);
+                if (attempts === maxQueryAttempts) throw new Error(`No person found for category ${categoryKey} after ${maxQueryAttempts} query attempts with different offsets.`);
+                continue; 
+            }
+            console.log(`[WIKIDATA_QUERY_SUCCESS] Attempt ${attempts}/${maxQueryAttempts} successful for category ${categoryKey}. Found ${list.length} results. Time: ${duration}ms`);
+
+
+            wikidataCache[cacheKey] = (wikidataCache[cacheKey] || []).concat(list).slice(-100); 
+            safeLocalStorage.setItem('wikidataCache', JSON.stringify(wikidataCache));
+            console.log('[CACHE_UPDATE] wikidataCache updated in safeLocalStorage.');
+
+            const randomPerson = list[Math.floor(Math.random() * list.length)];
+            if (randomPerson && randomPerson.personLabel && randomPerson.personLabel.value && randomPerson.image && randomPerson.image.value && randomPerson.gender && randomPerson.birthDate && randomPerson.person && randomPerson.person.value) {
+                return randomPerson;
+            } else {
+                 console.warn(`[WIKIDATA_QUERY_WARN] Randomly selected person is invalid, attempt ${attempts}/${maxQueryAttempts}. Person:`, randomPerson);
+                 if (attempts === maxQueryAttempts) throw new Error(`Selected invalid person on final attempt for category ${categoryKey}.`);
+                 continue; 
+            }
+
+        } catch (error) {
+            clearTimeout(timeoutId);
+            const isTimeoutAbort = error.name === 'AbortError';
+
+            if (isTimeoutAbort) {
+            } else {
+                if (error.message && error.message.includes('Failed to fetch')) {
+                    console.warn(`[WIKIDATA_QUERY_WARN] Query attempt ${attempts}/${maxQueryAttempts} for category ${categoryKey} failed with fetch issue. Retrying. Error: ${error.message}`);
+                } else {
+                    console.error(`[WIKIDATA_QUERY_ERROR] Query attempt ${attempts}/${maxQueryAttempts} for category ${categoryKey} failed. Retrying. Error: ${error.message}`);
+                }
+            }
+
+            if (isTimeoutAbort || attempts >= maxQueryAttempts) {
+                let rethrowMessage;
+                if (isTimeoutAbort) {
+                    rethrowMessage = `Wikidata query for person data (category: ${categoryKey}) timed out on attempt ${attempts}/${maxQueryAttempts}.`;
+                } else { 
+                    rethrowMessage = `Failed to fetch person data (category: ${categoryKey}) after ${maxQueryAttempts} attempts. Last error on attempt ${attempts}: ${error.message}`;
+                }
+                console.error(`[WIKIDATA_FETCH_FINAL_ERROR] ${rethrowMessage}`);
+                throw new Error(rethrowMessage);
+            }
+            console.log(`[WIKIDATA_FETCH_RETRY] Retrying query for ${categoryKey}, attempt ${attempts + 1}/${maxQueryAttempts}...`);
         }
-        throw new Error(`Failed to fetch person data for category ${categoryKey} after ${maxQueryAttempts} attempts (unexpected exit).`);
-    } finally {
-        resolveQueue();
     }
+    throw new Error(`Failed to fetch person data for category ${categoryKey} after ${maxQueryAttempts} attempts (unexpected exit).`);
 }
 
 async function startPreloadNextAvailablePerson() {
@@ -1496,17 +899,13 @@ async function startPreloadNextAvailablePerson() {
     console.log(`[PRELOAD] Starting preload for: ${personBindingForPreload.personLabel.value}`);
 
     try {
-        let commonsUrl;
-        if (personBindingForPreload.isOfflineFallback) {
-            commonsUrl = personBindingForPreload.image.value;
-        } else {
-            const fileName = decodeURIComponent(personBindingForPreload.image.value.split('/').pop());
-            commonsUrl = await getCommonsImageUrl(fileName);
-            if (!commonsUrl) {
-                console.warn(`[PRELOAD_WARN] No Commons URL for ${fileName} (person: ${personBindingForPreload.personLabel.value}) during preload. Preload for this item skipped.`);
-                isCurrentlyPreloading = false;
-                return;
-            }
+        const fileName = decodeURIComponent(personBindingForPreload.image.value.split('/').pop());
+        const commonsUrl = await getCommonsImageUrl(fileName);
+
+        if (!commonsUrl) {
+            console.warn(`[PRELOAD_WARN] No Commons URL for ${fileName} (person: ${personBindingForPreload.personLabel.value}) during preload. Preload for this item skipped.`);
+            isCurrentlyPreloading = false;
+            return;
         }
 
         if (settings.excludeBlackAndWhite) {
@@ -1520,50 +919,24 @@ async function startPreloadNextAvailablePerson() {
 
         const preloadedImage = new Image();
         preloadedImage.crossOrigin = "Anonymous";
+        const proxyImageUrl = `https://images.weserv.nl/?url=${encodeURIComponent(commonsUrl)}`;
 
         await new Promise((resolve, reject) => {
-            let isCompleted = false;
             preloadedImage.onload = () => {
-                if (isCompleted) return;
-                isCompleted = true;
-                console.log(`[PRELOAD_SUCCESS] Image preloaded successfully directly: ${commonsUrl} for ${personBindingForPreload.personLabel.value}`);
+                console.log(`[PRELOAD_SUCCESS] Image preloaded successfully via proxy: ${proxyImageUrl} for ${personBindingForPreload.personLabel.value}`);
                 preloadedPersonContainer = {
                     data: nextPersonToPreloadEntry, 
                     imageElement: preloadedImage,
                     commonsUrl: commonsUrl,
-                    proxyUrl: commonsUrl
+                    proxyUrl: proxyImageUrl
                 };
                 resolve();
             };
             preloadedImage.onerror = () => {
-                if (isCompleted) return;
-                console.warn(`[PRELOAD_DIRECT_FAILED] Direct image preload failed for ${commonsUrl}. Trying proxy fallback...`);
-                
-                const proxyImageUrl = `https://images.weserv.nl/?url=${encodeURIComponent(commonsUrl)}`;
-                const proxyImage = new Image();
-                proxyImage.crossOrigin = "Anonymous";
-                
-                proxyImage.onload = () => {
-                    isCompleted = true;
-                    console.log(`[PRELOAD_PROXY_SUCCESS] Image preloaded successfully via proxy: ${proxyImageUrl} for ${personBindingForPreload.personLabel.value}`);
-                    preloadedPersonContainer = {
-                        data: nextPersonToPreloadEntry, 
-                        imageElement: proxyImage,
-                        commonsUrl: commonsUrl,
-                        proxyUrl: proxyImageUrl
-                    };
-                    resolve();
-                };
-                
-                proxyImage.onerror = () => {
-                    isCompleted = true;
-                    console.error(`[PRELOAD_ERROR] Both direct and proxy preloads failed for: ${commonsUrl} (person: ${personBindingForPreload.personLabel.value})`);
-                    reject(new Error(`Preload failed for ${commonsUrl}`));
-                };
-                
-                proxyImage.src = proxyImageUrl;
+                console.error(`[PRELOAD_ERROR] Image preload failed for: ${proxyImageUrl} (person: ${personBindingForPreload.personLabel.value})`);
+                reject(new Error(`Preload failed for ${proxyImageUrl}`));
             };
-            preloadedImage.src = commonsUrl;
+            preloadedImage.src = proxyImageUrl;
         });
 
     } catch (error) {
@@ -1604,8 +977,7 @@ async function loadPersonFromData(personDataToDisplay, category = null) {
         }
         circularProgressContainer.classList.remove('hidden');
         circularProgressContainer.setAttribute('aria-valuenow', '0');
-        const cpBar = document.getElementById('circular-progress-bar');
-        if (cpBar) cpBar.style.strokeDashoffset = 100;
+        document.getElementById('circular-progress-bar').style.strokeDashoffset = 100;
         console.log('[LOAD_PERSON_UI_PREP] Image src cleared, progress UI active.');
 
         requestAnimationFrame(() => {
@@ -1692,17 +1064,12 @@ async function loadPersonFromData(personDataToDisplay, category = null) {
                      continue; 
                 }
 
-                let commonsUrl;
-                if (currentPersonCandidate.isOfflineFallback) {
-                    commonsUrl = currentPersonCandidate.image.value;
-                } else {
-                    const fileName = decodeURIComponent(currentPersonCandidate.image.value.split('/').pop());
-                    commonsUrl = await getCommonsImageUrl(fileName);
-                    if (!commonsUrl) {
-                        console.warn(`[LOAD_PERSON_WARN] No Commons URL for ${fileName}. Fetching new person.`);
-                        currentPersonCandidate = await fetchPersonData(true, category);
-                        continue;
-                    }
+                const fileName = decodeURIComponent(currentPersonCandidate.image.value.split('/').pop());
+                const commonsUrl = await getCommonsImageUrl(fileName);
+                if (!commonsUrl) {
+                     console.warn(`[LOAD_PERSON_WARN] No Commons URL for ${fileName}. Fetching new person.`);
+                     currentPersonCandidate = await fetchPersonData(true, category);
+                     continue;
                 }
                 
                 if (settings.excludeBlackAndWhite) {
@@ -1738,8 +1105,7 @@ async function loadPersonFromData(personDataToDisplay, category = null) {
                             personImage.style.opacity = '';
                         }
                         circularProgressContainer.classList.remove('hidden');
-                        const cpBarSub = document.getElementById('circular-progress-bar');
-                        if (cpBarSub) cpBarSub.style.strokeDashoffset = 100;
+                        document.getElementById('circular-progress-bar').style.strokeDashoffset = 100;
                      });
                 } else {
                     console.error(`[LOAD_PERSON_FAILURE] Max image fetch attempts (${maxImageLoadAttempts}) reached for this slot. No image loaded.`);
@@ -1780,8 +1146,8 @@ async function loadPersonFromData(personDataToDisplay, category = null) {
     updateUI(currentPerson); 
     
     currentAttemptStartTime = Date.now(); 
-    localStorage.setItem('currentAttemptStartTime', currentAttemptStartTime.toString());
-    console.log(`[STATE_CHANGE] Attempt start time set to ${currentAttemptStartTime} for person: ${currentPerson.personLabel.value}. Saved to localStorage.`);
+    safeLocalStorage.setItem('currentAttemptStartTime', currentAttemptStartTime.toString());
+    console.log(`[STATE_CHANGE] Attempt start time set to ${currentAttemptStartTime} for person: ${currentPerson.personLabel.value}. Saved to safeLocalStorage.`);
 
     sendGAEvent('photo_loaded', {
         person_id: currentPerson.person.value.split('/').pop(),
@@ -1825,13 +1191,11 @@ function updateUI(personToDisplay) {
         }
 
         const nextPersonBtn = document.getElementById('next-person');
-        if (nextPersonBtn) {
-            if (hasChecked && currentAttempts < maxAttempts) {
-                nextPersonBtn.style.display = 'block';
-                nextPersonBtn.textContent = texts.nextPerson; 
-            } else {
-                nextPersonBtn.style.display = 'none';
-            }
+        if (hasChecked && currentAttempts < maxAttempts) {
+            nextPersonBtn.style.display = 'block';
+            nextPersonBtn.textContent = texts.nextPerson; 
+        } else {
+            nextPersonBtn.style.display = 'none';
         }
         
         updateModeVisibility(); 
@@ -1864,8 +1228,6 @@ function handleError() {
         
         personInfo.style.display = 'none'; 
         personInfo.classList.remove('correct', 'incorrect');
-        const statusBadge = document.getElementById('person-status-badge');
-        if (statusBadge) statusBadge.classList.add('hidden');
         updateUI(null); 
 
         if (gameMode === 'closed') {
@@ -1877,8 +1239,8 @@ function handleError() {
         circularProgressContainer.classList.remove('hidden'); 
         
         currentAttemptStartTime = null; 
-        localStorage.removeItem('currentAttemptStartTime');
-        console.log('[STATE_CHANGE] currentAttemptStartTime cleared due to error. Removed from localStorage.');
+        safeLocalStorage.removeItem('currentAttemptStartTime');
+        console.log('[STATE_CHANGE] currentAttemptStartTime cleared due to error. Removed from safeLocalStorage.');
 
         setTimeout(() => {
             circularProgressContainer.classList.add('hidden');
@@ -1900,130 +1262,94 @@ function handleError() {
 
 async function loadSession() {
     const startTime = performance.now();
-    console.log('[LOAD_SESSION] Starting dynamic background streaming session...');
+    console.time('[LOAD_SESSION_TIMING]');
+    console.log('[LOAD_SESSION] Starting to load new session data...');
     sessionList = [];
     
     preloadedPersonContainer = null;
     isCurrentlyPreloading = false;
     console.log('[PRELOAD_RESET] Preload state reset for new session.');
 
-    updateProgressBar(0, false); 
-
-    currentStreamId++;
-    const streamId = currentStreamId;
-    isStreamingActive = true;
-
-    // Define categories to interleave
     const categories = [
         { gender: 'male', status: 'alive' },
-        { gender: 'female', status: 'alive' },
         { gender: 'male', status: 'deceased' },
+        { gender: 'female', status: 'alive' },
         { gender: 'female', status: 'deceased' }
     ];
 
-    const targets = [];
-    const peoplePerCategory = Math.ceil(settings.sessionPeople / categories.length);
-    for (let j = 0; j < peoplePerCategory; j++) {
-        for (const cat of categories) {
-            if (targets.length < settings.sessionPeople) {
-                targets.push(cat);
+    updateProgressBar(0, false); 
+
+    try {
+        const peoplePerCategory = Math.ceil(settings.sessionPeople / categories.length);
+        let fetchedCount = 0;
+        const totalToFetch = peoplePerCategory * categories.length; 
+        console.log(`[LOAD_SESSION] Aiming for ${peoplePerCategory} people per category, total ~${totalToFetch}. Max session size: ${settings.sessionPeople}`);
+
+        const promises = [];
+        for (const category of categories) {
+            for (let j = 0; j < peoplePerCategory && sessionList.length < settings.sessionPeople; j++) {
+                promises.push(
+                    fetchPersonData(false, category).then(personBinding => { 
+                        if (personBinding) { 
+                            sessionList.push({ person: personBinding, category: category });
+                        } else {
+                            console.warn('[LOAD_SESSION_WARN] fetchPersonData returned null/undefined, skipping from session add.');
+                        }
+                        fetchedCount++;
+                        updateProgressBar((fetchedCount / totalToFetch) * 100, false); 
+                        return personBinding; 
+                    }).catch(error => {
+                        console.error(`[LOAD_SESSION_ERROR] Error fetching for category ${category.gender}/${category.status}: ${error.message}`);
+                        fetchedCount++; 
+                        updateProgressBar((fetchedCount / totalToFetch) * 100, false); 
+                        return null; 
+                    })
+                );
             }
         }
-    }
+        
+        await Promise.all(promises);
+        sessionList = sessionList.filter(entry => 
+            entry && entry.person && 
+            entry.person.personLabel && entry.person.personLabel.value &&
+            entry.person.image && entry.person.image.value &&
+            entry.person.gender && entry.person.gender.value &&
+            entry.person.birthDate && entry.person.birthDate.value &&
+            entry.person.person && entry.person.person.value 
+        ).slice(0, settings.sessionPeople); 
 
-    console.log(`[STREAM_QUEUE] Scheduled highly interleaved queue of ${targets.length} candidates. Starting parallel stream worker pool.`);
+        console.log(`[LOAD_SESSION_COMPLETE] New session list loaded with ${sessionList.length} people.`);
+        logPhotoStatus();
+        updateProgressBar(100, false); 
 
-    let targetIndex = 0;
-    let activePromisesCount = 0;
-    let loadedCount = 0;
-    let firstPersonRendered = false;
-
-    async function launchNextFetch() {
-        if (streamId !== currentStreamId) {
-            console.log(`[STREAM_QUEUE] Stream ID mismatch (${currentStreamId} vs task ${streamId}). Halting active worker.`);
-            return;
-        }
-
-        if (targetIndex >= targets.length || loadedCount >= settings.sessionPeople) {
-            if (activePromisesCount === 0) {
-                isStreamingActive = false;
-                console.log(`[STREAM_QUEUE_COMPLETE] Background stream queue finished. Cached or loaded ${loadedCount} total items.`);
-                updateProgressBar(100, false);
-                console.log(`[LOAD_SESSION_TIMING] Total stream load elapsed (since launch): ${(performance.now() - startTime).toFixed(0)}ms`);
-            }
-            return;
-        }
-
-        const category = targets[targetIndex++];
-        activePromisesCount++;
-
-        try {
-            // Defensive delay to prevent browser thread freeze on rapid consecutive cache hits
-            await new Promise(resolve => setTimeout(resolve, 50));
-            const personBinding = await fetchPersonData(false, category);
+        if (sessionList.length > 0) {
+            hasChecked = false; 
+            const firstEntry = sessionList.shift(); 
+            console.log(`[LOAD_SESSION] Loading first person from new session: ${firstEntry.person.personLabel.value}`);
             
-            if (streamId !== currentStreamId) {
-                console.log('[STREAM_QUEUE] Stream ID changed mid-fetch. Discarded entry.');
-                return;
-            }
-
-            if (personBinding && 
-                personBinding.personLabel && personBinding.personLabel.value &&
-                personBinding.image && personBinding.image.value &&
-                personBinding.gender && personBinding.gender.value &&
-                personBinding.birthDate && personBinding.birthDate.value &&
-                personBinding.person && personBinding.person.value) {
-                
-                sessionList.push({ person: personBinding, category: category });
-                loadedCount++;
-                console.log(`[STREAM_QUEUE] Appended streamed candidate #${loadedCount}: ${personBinding.personLabel.value} (${category.gender}-${category.status})`);
-                
-                // Update visual thin horizontal progress bar correctly based on loadedCount
-                const progressPercentage = (loadedCount / settings.sessionPeople) * 100;
-                updateProgressBar(progressPercentage, false);
-
-                // If this is the FIRST person loaded under this session, render them to the screen IMMEDIATELY
-                if (!currentPerson && !firstPersonRendered) {
-                    firstPersonRendered = true;
-                    const firstEntry = sessionList.shift();
-                    console.log(`[STREAM_QUEUE_FIRST_ENTRY] Rendering first candidate instantly on screen: ${firstEntry.person.personLabel.value}`);
-                    
-                    hasChecked = false;
-                    await loadPersonFromData(firstEntry.person, firstEntry.category);
-                    
-                    requestAnimationFrame(() => {
-                        document.getElementById('male-btn').disabled = false;
-                        document.getElementById('female-btn').disabled = false;
-                        document.getElementById('alive-btn').disabled = false;
-                        document.getElementById('dead-btn').disabled = false;
-                        document.getElementById('next-person').style.display = 'none';
-                        document.getElementById('next-photo').disabled = false; 
-                        updateCheckButtonState();
-                        console.log('[STREAM_QUEUE_UI] Screen initialized with first streaming candidate.');
-                    });
-                } else {
-                    // Preload next image if idle and list has targets
-                    if (!isCurrentlyPreloading && !preloadedPersonContainer && sessionList.length > 0) {
-                        startPreloadNextAvailablePerson();
-                    }
-                }
-            } else {
-                console.warn('[STREAM_QUEUE_WARN] fetchPersonData returned invalid details or null bind.');
-            }
-        } catch (error) {
-            console.error(`[STREAM_QUEUE_ERROR] Fetch error details: ${error.message}`);
-        } finally {
-            activePromisesCount--;
-            // Recursively execute the next queue item in the next tick of the event loop to yield to the browser
-            setTimeout(() => {
-                launchNextFetch();
-            }, 10);
+            await loadPersonFromData(firstEntry.person, firstEntry.category); 
+            
+            requestAnimationFrame(() => {
+                document.getElementById('male-btn').disabled = false;
+                document.getElementById('female-btn').disabled = false;
+                document.getElementById('alive-btn').disabled = false;
+                document.getElementById('dead-btn').disabled = false;
+                document.getElementById('next-person').style.display = 'none';
+                document.getElementById('next-photo').disabled = false; 
+                updateCheckButtonState();
+                console.log('[LOAD_SESSION_UI] UI reset for new person from session.');
+            });
+        } else {
+            console.error('[LOAD_SESSION_FAILURE] Session list is empty after fetching and filtering. Handling error.');
+            handleError();
         }
+    } catch (error) {
+        console.error('[LOAD_SESSION_CRITICAL_ERROR] Overall session data loading failed:', error);
+        handleError();
+        updateProgressBar(0, false); 
     }
-
-    // Launch 2 background workers in parallel
-    launchNextFetch();
-    launchNextFetch();
+    console.timeEnd('[LOAD_SESSION_TIMING]');
+    console.log(`[LOAD_SESSION_TIMING] Total session loading time: ${(performance.now() - startTime).toFixed(0)}ms`);
 }
 
 async function loadNextPerson(triggerButton = 'unknown') {
@@ -2045,39 +1371,9 @@ async function loadNextPerson(triggerButton = 'unknown') {
     }
 
     if (sessionList.length === 0) {
-        if (isStreamingActive) {
-            console.log('[LOAD_NEXT_PERSON] Session list is empty but background streaming is still active. Showing spinner and waiting for stream item...');
-            const circularProgressContainer = document.getElementById('circular-progress-container');
-            if (circularProgressContainer) {
-                circularProgressContainer.classList.remove('hidden');
-                updateProgressBar(50, true);
-            }
-
-            let checkCount = 0;
-            while (sessionList.length === 0 && isStreamingActive && checkCount < 30) {
-                await new Promise(resolve => setTimeout(resolve, 500));
-                checkCount++;
-                console.log(`[LOAD_NEXT_PERSON_POLL] Polling for next person from stream queue (attempt ${checkCount}/30)...`);
-            }
-
-            if (circularProgressContainer) {
-                circularProgressContainer.classList.add('hidden');
-            }
-
-            if (sessionList.length === 0) {
-                console.warn('[LOAD_NEXT_PERSON_TIMEOUT] Timed out waiting for streaming item. Initiating a fresh session load.');
-                currentPerson = null;
-                await loadSession();
-                return;
-            } else {
-                console.log('[LOAD_NEXT_PERSON] Successfully received next person from background streaming queue!');
-            }
-        } else {
-            console.log('[LOAD_NEXT_PERSON] Session list is empty and streaming is inactive. Loading new session.');
-            currentPerson = null;
-            await loadSession(); 
-            return; 
-        }
+        console.log('[LOAD_NEXT_PERSON] Session list is empty, loading new session.');
+        await loadSession(); 
+        return; 
     }
 
     userGenderGuess = null;
@@ -2092,8 +1388,6 @@ async function loadNextPerson(triggerButton = 'unknown') {
     const personInfo = document.getElementById('person-info');
     personInfo.style.display = 'none';
     personInfo.classList.remove('correct', 'incorrect');
-    const statusBadge = document.getElementById('person-status-badge');
-    if (statusBadge) statusBadge.classList.add('hidden');
 
     const nextEntry = sessionList.shift(); 
     if (nextEntry && nextEntry.person) { 
@@ -2135,21 +1429,21 @@ function startNewGame() {
     const timestampSeconds = Math.floor(Date.now() / 1000);
     const randomNumber = Math.floor(Math.random() * 10000);
     currentSessionId = `${timestampSeconds}_${randomNumber}`;
-    localStorage.setItem('currentSessionId', currentSessionId);
-    console.log(`[GAME_FLOW] New game session ID: ${currentSessionId}. Saved to localStorage.`);
+    safeLocalStorage.setItem('currentSessionId', currentSessionId);
+    console.log(`[GAME_FLOW] New game session ID: ${currentSessionId}. Saved to safeLocalStorage.`);
     
     currentAttemptStartTime = null; 
-    localStorage.removeItem('currentAttemptStartTime');
-    console.log('[GAME_FLOW] currentAttemptStartTime reset and removed from localStorage.');
+    safeLocalStorage.removeItem('currentAttemptStartTime');
+    console.log('[GAME_FLOW] currentAttemptStartTime reset and removed from safeLocalStorage.');
 
 
-    localStorage.setItem('currentAttempts', currentAttempts.toString());
-    localStorage.setItem('totalGuesses', totalGuesses.toString());
-    localStorage.setItem('successfulGuesses', successfulGuesses.toString());
-    localStorage.setItem('failedGuesses', failedGuesses.toString());
-    localStorage.setItem('guessResultsHistory', JSON.stringify(guessResultsHistory));
-    localStorage.setItem('attemptDurations', JSON.stringify(attemptDurations));
-    console.log('[GAME_FLOW] Reset game state saved to localStorage.');
+    safeLocalStorage.setItem('currentAttempts', currentAttempts.toString());
+    safeLocalStorage.setItem('totalGuesses', totalGuesses.toString());
+    safeLocalStorage.setItem('successfulGuesses', successfulGuesses.toString());
+    safeLocalStorage.setItem('failedGuesses', failedGuesses.toString());
+    safeLocalStorage.setItem('guessResultsHistory', JSON.stringify(guessResultsHistory));
+    safeLocalStorage.setItem('attemptDurations', JSON.stringify(attemptDurations));
+    console.log('[GAME_FLOW] Reset game state saved to safeLocalStorage.');
 
     // Get player's local time string
     const now = new Date();
@@ -2185,8 +1479,6 @@ function startNewGame() {
     const personInfo = document.getElementById('person-info');
     personInfo.style.display = 'none'; 
     personInfo.classList.remove('correct', 'incorrect');
-    const statusBadge = document.getElementById('person-status-badge');
-    if (statusBadge) statusBadge.classList.add('hidden');
     updateUI(null); 
     console.log('[GAME_FLOW_UI] Statistics display and general UI reset.');
 
@@ -2283,8 +1575,8 @@ document.getElementById('check-btn').addEventListener('click', () => {
     console.log(`[CHECK_ACTION] Guess result - Gender Correct: ${isGenderCorrect} (Mode: ${gameMode}), Status Correct: ${isStatusCorrect}, Overall Correct: ${isOverallCorrect}`);
     
     guessResultsHistory.push(isOverallCorrect ? 1 : 0);
-    localStorage.setItem('guessResultsHistory', JSON.stringify(guessResultsHistory));
-    console.log(`[STATE_CHANGE] Guess result (${isOverallCorrect ? 1 : 0}) added to success/fail history. Saved to localStorage. History:`, guessResultsHistory);
+    safeLocalStorage.setItem('guessResultsHistory', JSON.stringify(guessResultsHistory));
+    console.log(`[STATE_CHANGE] Guess result (${isOverallCorrect ? 1 : 0}) added to success/fail history. Saved to safeLocalStorage. History:`, guessResultsHistory);
     
     let time_for_attempt_seconds = 0;
     if (currentAttemptStartTime) {
@@ -2296,8 +1588,8 @@ document.getElementById('check-btn').addEventListener('click', () => {
     }
     
     attemptDurations.push(time_for_attempt_seconds);
-    localStorage.setItem('attemptDurations', JSON.stringify(attemptDurations));
-    console.log(`[STATE_CHANGE] Attempt duration ${time_for_attempt_seconds}s added. Saved to localStorage. Durations:`, attemptDurations);
+    safeLocalStorage.setItem('attemptDurations', JSON.stringify(attemptDurations));
+    console.log(`[STATE_CHANGE] Attempt duration ${time_for_attempt_seconds}s added. Saved to safeLocalStorage. Durations:`, attemptDurations);
 
 
     if (currentSessionId) {
@@ -2320,15 +1612,14 @@ document.getElementById('check-btn').addEventListener('click', () => {
 
     sendGAEvent('guess_made', {
         person_id: currentPerson.person.value.split('/').pop(),
-        person_name: currentPerson.personLabel.value,
         game_mode: gameMode,
         guessed_gender: gameMode === 'closed' ? userGenderGuess : undefined,
         actual_gender: actualGender,
         guessed_status: userStatusGuess,
         actual_status: actualStatus,
-        is_gender_correct: gameMode === 'closed' ? (isGenderCorrect ? 1 : 0) : undefined,
-        is_status_correct: isStatusCorrect ? 1 : 0,
-        is_overall_correct: isOverallCorrect ? 1 : 0,
+        is_gender_correct: gameMode === 'closed' ? isGenderCorrect : undefined,
+        is_status_correct: isStatusCorrect,
+        is_overall_correct: isOverallCorrect,
         attempt_number: currentAttempts,
         new_language: selectedLanguage // Changed from new_lang
     });
@@ -2336,10 +1627,6 @@ document.getElementById('check-btn').addEventListener('click', () => {
     requestAnimationFrame(() => {
         personInfo.style.display = 'block'; 
         personInfo.classList.remove('correct', 'incorrect'); 
-
-        const statusBadge = document.getElementById('person-status-badge');
-        const statusTextEl = document.getElementById('person-status-text');
-        const statusIconEl = statusBadge ? statusBadge.querySelector('.material-symbols-outlined') : null;
 
         if (gameMode === 'closed') {
             overlay.classList.add('hidden'); 
@@ -2351,22 +1638,10 @@ document.getElementById('check-btn').addEventListener('click', () => {
             personInfo.classList.add('correct');
             successfulGuesses++;
             console.log('[CHECK_UI] Guess was CORRECT.');
-            if (statusBadge && statusTextEl) {
-                statusBadge.classList.remove('hidden', 'bg-spirit-violet/10', 'text-spirit-violet', 'border-spirit-violet/20');
-                statusBadge.classList.add('bg-neon-cyan/15', 'text-neon-cyan', 'border-neon-cyan/30');
-                statusTextEl.textContent = translations[selectedLanguage].correctGuess || 'CORRECT';
-                if (statusIconEl) statusIconEl.textContent = 'check_circle';
-            }
         } else {
             personInfo.classList.add('incorrect');
             failedGuesses++;
             console.log('[CHECK_UI] Guess was INCORRECT.');
-            if (statusBadge && statusTextEl) {
-                statusBadge.classList.remove('hidden', 'bg-neon-cyan/15', 'text-neon-cyan', 'border-neon-cyan/30');
-                statusBadge.classList.add('bg-spirit-violet/15', 'text-spirit-violet', 'border-spirit-violet/30');
-                statusTextEl.textContent = translations[selectedLanguage].incorrectGuess || 'INCORRECT';
-                if (statusIconEl) statusIconEl.textContent = 'cancel';
-            }
         }
         document.getElementById('next-person').style.display = 'block'; 
         
@@ -2384,11 +1659,11 @@ document.getElementById('check-btn').addEventListener('click', () => {
         updateGuessHistoryDisplay(); 
         console.log('[CHECK_UI] Stats display updated.');
         
-        localStorage.setItem('currentAttempts', currentAttempts.toString());
-        localStorage.setItem('totalGuesses', totalGuesses.toString()); 
-        localStorage.setItem('successfulGuesses', successfulGuesses.toString());
-        localStorage.setItem('failedGuesses', failedGuesses.toString());
-        console.log('[STATE_CHANGE] Game stats after check saved to localStorage.');
+        safeLocalStorage.setItem('currentAttempts', currentAttempts.toString());
+        safeLocalStorage.setItem('totalGuesses', totalGuesses.toString()); 
+        safeLocalStorage.setItem('successfulGuesses', successfulGuesses.toString());
+        safeLocalStorage.setItem('failedGuesses', failedGuesses.toString());
+        console.log('[STATE_CHANGE] Game stats after check saved to safeLocalStorage.');
 
         updateUI(currentPerson); 
         updateNewGameButtonPosition(); 
@@ -2407,11 +1682,11 @@ document.getElementById('check-btn').addEventListener('click', () => {
                 session_id: currentSessionId,
                 current_theme: isNight ? 'night' : 'day' 
             });
-            localStorage.removeItem('currentSessionId');
-            localStorage.removeItem('currentAttemptStartTime');
+            safeLocalStorage.removeItem('currentSessionId');
+            safeLocalStorage.removeItem('currentAttemptStartTime');
             currentSessionId = null;
             currentAttemptStartTime = null;
-            console.log('[STATE_CHANGE] Game over: currentSessionId and currentAttemptStartTime cleared from localStorage.');
+            console.log('[STATE_CHANGE] Game over: currentSessionId and currentAttemptStartTime cleared from safeLocalStorage.');
         }
     });
 });
@@ -2429,148 +1704,11 @@ document.getElementById('next-person').addEventListener('click', () => {
 
 document.getElementById('new-game').addEventListener('click', () => {
     console.log('[USER_ACTION] "New Game" button clicked.');
-    reportProgressOnLeave('new_game_reset');
     startNewGame();
 });
 
-function reportProgressOnLeave(trigger) {
-    if (currentSessionId && currentAttempts > 0 && currentAttempts < maxAttempts) {
-        console.log(`[LIFE_CYCLE_REPORT] Unfinished game detected inside ${trigger}. Attempts/max: ${currentAttempts}/${maxAttempts}. Reporting to GA...`);
-        sendGAEvent('game_unfinished_report', {
-            session_id: currentSessionId,
-            current_attempts: currentAttempts,
-            total_attempts_max: maxAttempts,
-            successful_guesses: successfulGuesses,
-            failed_guesses: failedGuesses,
-            success_rate: `${totalGuesses > 0 ? Math.round((successfulGuesses / totalGuesses) * 100) : 0}%`,
-            new_language: selectedLanguage,
-            game_mode: gameMode,
-            current_theme: isNight ? 'night' : 'day',
-            trigger_event: trigger,
-            platform: window.Telegram?.WebApp?.platform || 'web',
-            transport_type: 'beacon'
-        });
-    } else {
-        console.log(`[LIFE_CYCLE_REPORT] No unfinished game report needed inside ${trigger} callback (attempts active: ${currentAttempts > 0 && currentAttempts < maxAttempts}).`);
-    }
-}
-
-// Setup diagnostics event listeners
-function setupDiagnosticsPanel() {
-    console.log('[DIAG_SETUP] Initializing diagnostics panel listeners...');
-    
-    const diagPanel = document.getElementById('diagnostics-panel');
-    if (diagPanel) {
-        diagPanel.style.display = window.diagnosticsEnabled ? 'block' : 'none';
-    }
-
-    const runDiagBtn = document.getElementById('run-diag-btn');
-    if (runDiagBtn) {
-        runDiagBtn.addEventListener('click', () => {
-            runSystemDiagnostics();
-        });
-    }
-
-    const forceReloadBtn = document.getElementById('force-reload-btn');
-    if (forceReloadBtn) {
-        forceReloadBtn.addEventListener('click', () => {
-            console.log('[DIAG] Force Reload triggered by user. Clearing cache and reloading...');
-            const url = new URL(window.location.href);
-            url.searchParams.set('cache_bust', Date.now().toString());
-            window.location.replace(url.toString());
-        });
-    }
-
-    const clearBtn = document.getElementById('clear-logs-btn');
-    if (clearBtn) {
-        clearBtn.addEventListener('click', () => {
-            window.appLogs = [];
-            try {
-                localStorage.removeItem('appLogs_persistent');
-            } catch (e) {}
-            const debugPre = document.getElementById('debug-log-output');
-            if (debugPre) {
-                debugPre.textContent = 'Logs cleared.';
-            }
-            console.log('[DIAG] Logs cleared by user.');
-        });
-    }
-
-    const copyBtn = document.getElementById('copy-logs-btn');
-    if (copyBtn) {
-        copyBtn.addEventListener('click', () => {
-            const logsText = window.appLogs.join('\n');
-            navigator.clipboard.writeText(logsText).then(() => {
-                const originalText = copyBtn.textContent;
-                copyBtn.textContent = (selectedLanguage === 'uk' ? 'Скопійовано! ✅' : selectedLanguage === 'ru' ? 'Скопировано! ✅' : 'Copied! ✅');
-                setTimeout(() => {
-                    copyBtn.textContent = originalText;
-                }, 1500);
-                console.log('[DIAG] Logs copied to clipboard.');
-            }).catch(err => {
-                console.error('[DIAG_ERROR] Failed to copy logs:', err);
-                const originalText = copyBtn.textContent;
-                copyBtn.textContent = 'Failed! ❌';
-                setTimeout(() => {
-                    copyBtn.textContent = originalText;
-                }, 1500);
-            });
-        });
-    }
-
-    // Version badge 10 clicks toggling
-    const versionBadge = document.getElementById('app-version-badge');
-    if (versionBadge) {
-        let clicksCount = 0;
-        let lastClickTime = 0;
-        versionBadge.addEventListener('click', () => {
-            const now = Date.now();
-            if (now - lastClickTime > 3000) {
-                clicksCount = 0;
-            }
-            clicksCount++;
-            lastClickTime = now;
-
-            if (clicksCount >= 10) {
-                clicksCount = 0;
-                window.diagnosticsEnabled = !window.diagnosticsEnabled;
-                localStorage.setItem('diagnostics_enabled', window.diagnosticsEnabled ? 'true' : 'false');
-                
-                if (diagPanel) {
-                    diagPanel.style.display = window.diagnosticsEnabled ? 'block' : 'none';
-                }
-
-                let currentVersion = APP_VERSION_FALLBACK;
-
-                if (window.diagnosticsEnabled) {
-                    runSystemDiagnostics();
-                    console.log('[SYSTEM] Diagnostics and logs ENABLED via secret code.');
-                    
-                    versionBadge.textContent = (selectedLanguage === 'uk' 
-                        ? `Діагностика увімкнена! 📊 (v${currentVersion})` 
-                        : selectedLanguage === 'ru' 
-                        ? `Диагностика включена! 📊 (v${currentVersion})` 
-                        : `Diagnostics enabled! 📊 (v${currentVersion})`);
-                    setTimeout(() => {
-                        translateUI();
-                    }, 2000);
-                } else {
-                    window.appLogs = [];
-                    try {
-                        localStorage.removeItem('appLogs_persistent');
-                    } catch (e) {}
-                    console.log('[SYSTEM] Diagnostics and logs DISABLED.');
-                    
-                    // Immediately show the version without any "diagnostics disabled" text
-                    translateUI();
-                }
-            }
-        });
-    }
-}
-
-const initApp = () => {
-    console.log('[WINDOW_ONLOAD] Page loaded. Initializing application state.');
+function initializeApp() {
+    console.log('[WINDOW_ONLOAD] Page loaded/loaded-state detected. Initializing application state.');
 
     if (window.Telegram && window.Telegram.WebApp) {
         try {
@@ -2618,26 +1756,22 @@ const initApp = () => {
     gameOverNewGameContainer = document.getElementById('new-game-over-location');
     console.log('[WINDOW_ONLOAD] New Game button containers initialized.');
 
-    currentSessionId = localStorage.getItem('currentSessionId');
-    const storedAttemptStartTime = localStorage.getItem('currentAttemptStartTime');
+    currentSessionId = safeLocalStorage.getItem('currentSessionId');
+    const storedAttemptStartTime = safeLocalStorage.getItem('currentAttemptStartTime');
     if (storedAttemptStartTime) {
         currentAttemptStartTime = parseInt(storedAttemptStartTime, 10);
     }
-    guessResultsHistory = safeParse('guessResultsHistory', []);
-    attemptDurations = safeParse('attemptDurations', []);
+    guessResultsHistory = JSON.parse(safeLocalStorage.getItem('guessResultsHistory')) || [];
+    attemptDurations = JSON.parse(safeLocalStorage.getItem('attemptDurations')) || [];
     console.log(`[WINDOW_ONLOAD_RESTORE] Restored from localStorage - Session ID: ${currentSessionId}, Attempt Start Time: ${currentAttemptStartTime}, Guess Results History: ${guessResultsHistory}, Attempt Durations: ${attemptDurations}`);
 
 
-    const isFirstLaunchOrReset = localStorage.getItem('currentAttempts') === null;
+    const isFirstLaunchOrReset = safeLocalStorage.getItem('currentAttempts') === null;
     console.log(`[WINDOW_ONLOAD] Is first launch or reset: ${isFirstLaunchOrReset}`);
     
     const personInfoOnLoad = document.getElementById('person-info');
-    if (personInfoOnLoad) {
-        personInfoOnLoad.style.display = 'none'; 
-        personInfoOnLoad.classList.remove('correct', 'incorrect'); 
-    }
-    const statusBadge = document.getElementById('person-status-badge');
-    if (statusBadge) statusBadge.classList.add('hidden');
+    personInfoOnLoad.style.display = 'none'; 
+    personInfoOnLoad.classList.remove('correct', 'incorrect'); 
 
     if (isFirstLaunchOrReset) {
         console.log("[WINDOW_ONLOAD] First launch or reset detected. Initializing a new game.");
@@ -2660,9 +1794,9 @@ const initApp = () => {
             document.getElementById('next-person').style.display = 'none';
             
             if (currentSessionId || currentAttemptStartTime) {
-                console.warn("[WINDOW_ONLOAD_GAMEOVER_CLEANUP] Game was over, but session ID or start time found in localStorage. Clearing them now.");
-                localStorage.removeItem('currentSessionId');
-                localStorage.removeItem('currentAttemptStartTime');
+                console.warn("[WINDOW_ONLOAD_GAMEOVER_CLEANUP] Game was over, but session ID or start time found in safeLocalStorage. Clearing them now.");
+                safeLocalStorage.removeItem('currentSessionId');
+                safeLocalStorage.removeItem('currentAttemptStartTime');
                 currentSessionId = null;
                 currentAttemptStartTime = null;
             }
@@ -2678,7 +1812,7 @@ const initApp = () => {
             document.getElementById('stats-success-rate').textContent = `${successRate}%`;
             
             if (!currentSessionId && currentAttempts > 0 && currentAttempts < maxAttempts) {
-                console.warn("[WINDOW_ONLOAD_RESUME_WARN] Resuming game, but currentSessionId is missing from localStorage. It will be generated on the next new game. GA events for ongoing attempts might miss session_id.");
+                console.warn("[WINDOW_ONLOAD_RESUME_WARN] Resuming game, but currentSessionId is missing from safeLocalStorage. It will be generated on the next new game. GA events for ongoing attempts might miss session_id.");
             }
 
             if (!currentPerson) { 
@@ -2694,39 +1828,41 @@ const initApp = () => {
         }
         updateCheckButtonState();
         updateGuessHistoryDisplay(); 
-        updateNewGameButtonPosition(true);
+        updateNewGameButtonPosition();
     }
     updateTelegramUserInfoDisplay(); 
-
-    // Setup diagnostics panel and run initial diagnostics if enabled
-    setupDiagnosticsPanel();
-    if (window.diagnosticsEnabled) {
-        runSystemDiagnostics();
-    }
-
-    // Setup lifecycle event listeners
-    window.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'hidden') {
-            console.log('[LIFE_CYCLE] Page became hidden (app backgrounded or closed).');
-            reportProgressOnLeave('visibility_hidden');
-        }
-    });
-
-    window.addEventListener('pagehide', () => {
-        console.log('[LIFE_CYCLE] pagehide event fired.');
-        reportProgressOnLeave('pagehide');
-    });
-
-    window.addEventListener('freeze', () => {
-        console.log('[LIFE_CYCLE] freeze event fired (app suspended).');
-        reportProgressOnLeave('freeze');
-    });
-
     console.log('[WINDOW_ONLOAD] Page load sequence finished.');
-};
+}
 
 if (document.readyState === 'complete' || document.readyState === 'interactive') {
-    initApp();
+    initializeApp();
 } else {
-    window.addEventListener('DOMContentLoaded', initApp);
+    window.addEventListener('DOMContentLoaded', initializeApp);
 }
+
+
+// --- ФИКС: Отслеживание закрытия страницы или сворачивания приложения (в т.ч. Telegram Web App) ---
+document.addEventListener('visibilitychange', () => {
+    // Если страница скрывается (пользователь закрывает вкладку, сворачивает браузер)
+    if (document.visibilityState === 'hidden') {
+        
+        // Проверяем, была ли игра начата, но не доведена до конца (10 попыток)
+        if (currentAttempts > 0 && currentAttempts < maxAttempts && currentSessionId) {
+            console.log('[SESSION_ABANDONED] Пользователь покинул игру до ее завершения.');
+
+            const successRate = totalGuesses > 0 ? Math.round((successfulGuesses / totalGuesses) * 100) : 0;
+            
+            // Отправка в Google Analytics 4 события брошенной игры.
+            sendGAEvent('game_abandoned', {
+                attempt_number: currentAttempts, // ИСПОЛЬЗУЕМ ВАШ ГОТОВЫЙ ПАРАМЕТР
+                successful_guesses: successfulGuesses,
+                failed_guesses: failedGuesses,
+                success_rate: `${successRate}%`,
+                new_language: selectedLanguage,
+                game_mode: gameMode,
+                session_id: currentSessionId,
+                current_theme: isNight ? 'night' : 'day'
+            });
+        }
+    }
+});

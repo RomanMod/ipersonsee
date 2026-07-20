@@ -1,13 +1,11 @@
+
 <!DOCTYPE html>
-<html class="dark" lang="uk">
+<html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <title>iPersonSee - Духовний Ритуал</title>
+    <title>Гра: Випадкова людина з Wikidata</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="referrer" content="origin">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
 
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-WDPB825TVX"></script>
@@ -20,289 +18,92 @@
     </script>
     <!-- End Google Analytics -->
     
-    <script>
-      window.onloadErrors = [];
-      window.onerror = function(message, source, lineno, colno, error) {
-          const errStr = 'Critical Error: ' + message + ' at ' + source + ':' + lineno + ':' + colno + (error && error.stack ? '\nStack:\n' + error.stack : '');
-          window.onloadErrors.push(errStr);
-          const errDiv = document.getElementById('critical-error-display');
-          if (errDiv) {
-              errDiv.style.display = 'block';
-              errDiv.textContent += errStr + '\n\n';
-          }
-      };
-      window.onunhandledrejection = function(event) {
-          const errStr = 'Unhandled Rejection: ' + event.reason + (event.reason && event.reason.stack ? '\nStack:\n' + event.reason.stack : '');
-          window.onloadErrors.push(errStr);
-          const errDiv = document.getElementById('critical-error-display');
-          if (errDiv) {
-              errDiv.style.display = 'block';
-              errDiv.textContent += errStr + '\n\n';
-          }
-      };
-    </script>
-    
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    
-    <!-- Design System Fonts and Icons -->
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Inter:wght@400;700&display=swap" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-    
-    <!-- Tailwind CDN for Instant High-End Styles in Editor -->
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <script>
-      tailwind.config = {
-        darkMode: "class",
-        theme: {
-          extend: {
-            colors: {
-              "void-black": "#0A0A0B",
-              "deep-space": "#1C1C1E",
-              "lunar-gray": "#2C2C2E",
-              "neon-cyan": "#00F0FF",
-              "spirit-violet": "#BC13FE",
-              "ritual-gold": "#FFD700",
-              "surface-container-low": "#1c1b1b",
-              "surface-container-lowest": "#0e0e0e",
-              "surface": "#131313",
-              "on-surface": "#e5e2e1",
-              "on-surface-variant": "#b9cacb"
-            },
-            fontFamily: {
-              "headline": ["Space Grotesk", "sans-serif"],
-              "body": ["Inter", "sans-serif"],
-              "mono": ["JetBrains Mono", "monospace"]
-            }
-          }
-        }
-      }
-    </script>
-    
-    <!-- Main Style Sheet Bundle -->
     <link rel="stylesheet" href="/index.css">
 </head>
-<body class="text-on-surface font-body min-h-screen flex flex-col items-center selection:bg-neon-cyan selection:text-void-black overflow-x-hidden pb-24 transition-colors duration-300">
-
-    <!-- Critical Error Display Overlay -->
-    <div id="critical-error-display" style="display:none; background:#8b0000; color:#ffffff; padding:15px; font-family:monospace; font-size:12px; position:fixed; top:0; left:0; right:0; z-index:999999; max-height:50vh; overflow-y:auto; white-space:pre-wrap; border-bottom:3px solid #ff0000; box-shadow:0 4px 20px rgba(0,0,0,0.5);">
-        <div style="font-weight:bold; font-size:14px; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.05em; display:flex; justify-content:space-between; align-items:center;">
-            <span>🚨 Critical Startup Error</span>
-            <button onclick="this.parentElement.parentElement.style.display='none'" style="background:rgba(255,255,255,0.2); border:none; color:white; padding:2px 8px; border-radius:4px; cursor:pointer; font-size:10px;">Dismiss</button>
+<body class="night">
+    <div class="settings">
+        <button id="theme-toggle" aria-label="Переключити тему">🌙 Ніч</button>
+        <div class="custom-select" id="language-select">
+            <div class="selected-option">Українська</div>
+            <ul class="options" style="display: none;">
+                <li data-value="uk">Українська</li>
+                <li data-value="ru">Русский</li>
+                <li data-value="en">English</li>
+                <li data-value="alien">👽 ⊸⍟⊸</li>
+            </ul>
+        </div>
+        <div class="custom-select" id="mode-select">
+            <div class="selected-option">Відкритий</div>
+            <ul class="options" style="display: none;">
+                <li data-value="open">Відкритий</li>
+                <li data-value="closed">Закритий</li>
+            </ul>
         </div>
     </div>
 
-    <!-- Ambient Cosmic Vignette -->
-    <div class="fixed inset-0 pointer-events-none z-[-1] bg-[radial-gradient(circle_at_center,rgba(188,19,254,0.03)_0%,rgba(0,0,0,0)_80%)]"></div>
-
-    <!-- Header Block -->
-    <header class="w-full max-w-md mx-auto px-4 pt-4 z-50">
-        <div class="flex flex-col">
-            
-            <!-- Controls Cluster (Theme, Language, Mode selectors) -->
-            <div class="grid grid-cols-3 gap-2 w-full">
-                <!-- Theme Toggle -->
-                <button id="theme-toggle" class="bg-surface-container-low/85 border border-white/10 px-3 py-2.5 rounded-full flex items-center justify-center gap-1.5 hover:bg-lunar-gray/60 transition-all group active:scale-95 text-xs font-headline uppercase tracking-wider text-on-surface" aria-label="Переключити тему">
-                    🌙 Ніч
-                </button>
-                
-                <!-- Language Dropdown -->
-                <div class="custom-select relative" id="language-select">
-                    <div class="selected-option bg-surface-container-low/85 border border-white/10 px-3 py-2.5 rounded-full flex items-center justify-center gap-1.5 hover:bg-lunar-gray/60 transition-all text-xs font-headline uppercase tracking-wider text-on-surface cursor-pointer select-none text-center">
-                        Українська
-                    </div>
-                    <ul class="options absolute left-0 right-0 top-full mt-1.5 bg-void-black/95 border border-white/10 rounded-2xl overflow-hidden z-[100] py-1 shadow-2xl transition-all duration-200" style="display: none;">
-                        <li data-value="uk" class="px-4 py-2 hover:bg-neon-cyan/20 cursor-pointer text-xs font-headline text-on-surface text-center">Українська</li>
-                        <li data-value="ru" class="px-4 py-2 hover:bg-neon-cyan/20 cursor-pointer text-xs font-headline text-on-surface text-center">Русский</li>
-                        <li data-value="en" class="px-4 py-2 hover:bg-neon-cyan/20 cursor-pointer text-xs font-headline text-on-surface text-center">English</li>
-                        <li data-value="alien" class="px-4 py-2 hover:bg-neon-cyan/20 cursor-pointer text-xs font-headline text-on-surface text-center">👽 ⊸⍟⊸</li>
-                    </ul>
-                </div>
-                
-                <!-- Game Mode Toggle Button -->
-                <button id="mode-toggle" class="bg-surface-container-low/85 border border-white/10 px-3 py-2.5 rounded-full flex items-center justify-center gap-1.5 hover:bg-lunar-gray/60 transition-all active:scale-95 text-xs font-headline uppercase tracking-wider text-on-surface select-none text-center">
-                    Відкритий
-                </button>
-            </div>
+    <button id="next-photo">🔄 Знайти нове фото</button>
+    <div id="main-display">
+        <img id="person-image" src="placeholder.jpg" alt="Зображення людини">
+        <div id="overlay" class="overlay hidden"></div>
+        <div id="progress-bar"></div>
+        <div id="circular-progress-container" class="hidden" aria-label="Loading progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <svg id="circular-progress-svg" viewBox="0 0 36 36">
+                <path class="circular-progress-bg"
+                    d="M18 2.0845
+                      a 15.9155 15.9155 0 0 1 0 31.831
+                      a 15.9155 15.9155 0 0 1 0 -31.831"
+                />
+                <path id="circular-progress-bar" class="circular-progress-bar"
+                    stroke-dasharray="100, 100" 
+                    d="M18 2.0845
+                      a 15.9155 15.9155 0 0 1 0 31.831
+                      a 15.9155 15.9155 0 0 1 0 -31.831"
+                />
+                <text id="circular-progress-text" x="18" y="20.35" class="circular-progress-text">0%</text>
+            </svg>
         </div>
-    </header>
-
-    <!-- Main Game Workspace -->
-    <main class="flex-grow w-full max-w-md mx-auto px-4 flex flex-col items-center justify-center gap-6 py-6 relative">
-        
-        <!-- Action: Find New Photo -->
-        <button id="next-photo" class="bg-surface-container-low/80 backdrop-blur-md border border-neon-cyan/30 px-5 py-2.5 rounded-full flex items-center gap-2 hover:bg-neon-cyan/20 transition-all duration-300 active:scale-95 text-on-surface whitespace-nowrap shadow-[0_0_15px_rgba(0,240,255,0.15)]">
-            <span class="material-symbols-outlined text-neon-cyan text-base animate-spin-slow">refresh</span>
-            <span id="next-photo-text" class="font-mono text-[10px] font-bold tracking-widest uppercase">Знайти нове фото</span>
-        </button>
-
-        <!-- Portrait Container -->
-        <div id="main-display" class="w-full aspect-[4/5] ritual-frame rounded-2xl p-4 flex items-center justify-center relative overflow-hidden group max-w-sm mx-auto shadow-[0_0_30px_rgba(0,0,0,0.8)]">
-            <!-- Shamanic Corner Marks -->
-            <div class="absolute top-0 left-0 w-10 h-10 border-t border-l border-neon-cyan opacity-40 rounded-tl-xl transition-all group-hover:w-12 group-hover:h-12 group-hover:opacity-75"></div>
-            <div class="absolute bottom-0 right-0 w-10 h-10 border-b border-r border-spirit-violet opacity-40 rounded-br-xl transition-all group-hover:w-12 group-hover:h-12 group-hover:opacity-75"></div>
-            
-            <div class="w-full h-full bg-void-black rounded-lg overflow-hidden relative border border-white/5">
-                <!-- The Person Portrait -->
-                <img id="person-image" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-102 transition-all duration-700" src="placeholder.jpg" alt="Зображення людини">
-                
-                <!-- Shamanic Vignette Overlay -->
-                <div class="absolute inset-0 bg-gradient-to-t from-void-black/60 via-transparent to-transparent pointer-events-none"></div>
-                
-                <!-- Blackout Overlay for Closed Mode -->
-                <div id="overlay" class="absolute inset-0 bg-void-black/95 z-10 hidden transition-all duration-500 flex flex-col items-center justify-center gap-4">
-                    <span class="material-symbols-outlined text-4xl text-spirit-violet animate-pulse">lock</span>
-                    <span class="font-mono text-[10px] tracking-widest text-on-surface-variant uppercase">Протокол Порожнечі</span>
-                </div>
-                
-                <!-- Thin Progress Indicator -->
-                <div id="progress-bar" class="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-neon-cyan to-spirit-violet z-20 transition-all duration-300 hidden"></div>
-                
-                <!-- Circular Loader -->
-                <div id="circular-progress-container" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 z-15 transition-opacity duration-300 hidden" aria-label="Loading progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-                    <svg id="circular-progress-svg" viewBox="0 0 36 36" class="w-full h-full rotate-[-90deg]">
-                        <path class="circular-progress-bg fill-none stroke-lunar-gray/40 stroke-[3.5]"
-                            d="M18 2.0845
-                              a 15.9155 15.9155 0 0 1 0 31.831
-                              a 15.9155 15.9155 0 0 1 0 -31.831"
-                        />
-                        <path id="circular-progress-bar" class="circular-progress-bar fill-none stroke-neon-cyan stroke-[3.5] stroke-linecap-round transition-all duration-300"
-                            stroke-dasharray="100, 100" 
-                            d="M18 2.0845
-                              a 15.9155 15.9155 0 0 1 0 31.831
-                              a 15.9155 15.9155 0 0 1 0 -31.831"
-                        />
-                        <text id="circular-progress-text" x="18" y="20.35" class="circular-progress-text text-[0.6rem] font-bold fill-on-surface text-center rotate-90 origin-[18px_18px] hidden">0%</text>
-                    </svg>
-                </div>
-                
-            </div>
-        </div>
-
-        <!-- Temporary spot for New Game button when game is over -->
-        <div id="new-game-over-location" class="w-full flex justify-center py-2" style="display: none;"></div>
-
-        <!-- Person details card revealed upon validation -->
-        <div id="person-info" class="w-full max-w-sm mx-auto bg-surface-container-lowest/80 backdrop-blur-xl border border-white/5 rounded-2xl p-5 text-center text-sm transition-all duration-300 shadow-xl hidden select-none">
-            <!-- Dynamic Status Badge (Correct / Incorrect) -->
-            <div id="person-status-badge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono uppercase tracking-wider mb-3.5 border hidden">
-                <span class="material-symbols-outlined text-xs">check_circle</span>
-                <span id="person-status-text">ВІРНО</span>
-            </div>
-            <div id="person-details" class="font-headline tracking-wide space-y-1.5 text-on-surface leading-relaxed"></div>
-        </div>
-
-        <!-- Gender Guess Buttons (Row 1) -->
-        <div class="gender-buttons w-full flex flex-row justify-center items-center gap-4 max-w-sm mx-auto">
-            <button id="male-btn" class="flex-1 py-3 rounded-full bg-surface-container-low/85 border border-white/10 hover:border-neon-cyan/40 hover:bg-lunar-gray/60 transition-all select-none font-headline font-semibold text-xs tracking-wider text-on-surface active:scale-98 uppercase text-center" aria-label="Вгадати чоловіка">
-                Чоловік
-            </button>
-            <button id="female-btn" class="flex-1 py-3 rounded-full bg-surface-container-low/85 border border-white/10 hover:border-spirit-violet/40 hover:bg-lunar-gray/60 transition-all select-none font-headline font-semibold text-xs tracking-wider text-on-surface active:scale-98 uppercase text-center" aria-label="Вгадати жінку">
-                Жінка
-            </button>
-        </div>
-
-        <!-- Status Guess Buttons (Row 2) -->
-        <div class="status-buttons w-full flex flex-row justify-center items-center gap-4 max-w-sm mx-auto">
-            <button id="alive-btn" class="flex-1 py-3 rounded-full bg-surface-container-low/85 border border-white/10 hover:border-neon-cyan/40 hover:bg-lunar-gray/60 transition-all select-none font-headline font-semibold text-xs tracking-wider text-on-surface active:scale-98 uppercase text-center" aria-label="Вгадати живого">
-                Живий
-            </button>
-            <button id="dead-btn" class="flex-1 py-3 rounded-full bg-surface-container-low/85 border border-white/10 hover:border-spirit-violet/40 hover:bg-lunar-gray/60 transition-all select-none font-headline font-semibold text-xs tracking-wider text-on-surface active:scale-98 uppercase text-center" aria-label="Вгадати померлого">
-                Померлий
-            </button>
-        </div>
-
-        <!-- Main Validation Trigger -->
-        <div class="check-button w-full max-w-sm mx-auto">
-            <button id="check-btn" class="w-full py-4 rounded-full bg-neon-cyan border border-neon-cyan text-void-black font-headline font-bold text-sm tracking-widest hover:bg-neon-cyan/90 transition-all active:scale-98 disabled:opacity-40 disabled:pointer-events-none disabled:bg-surface-container-low disabled:text-on-surface-variant disabled:border-white/5 shadow-[0_0_15px_rgba(0,240,255,0.15)] select-none uppercase" disabled>
-                Перевірити
-            </button>
-        </div>
-
-        <!-- Next Person Trigger -->
-        <div class="next-person-container w-full max-w-sm mx-auto">
-            <button id="next-person" class="w-full py-4 rounded-full bg-spirit-violet border border-spirit-violet text-on-surface font-headline font-bold text-sm tracking-widest hover:bg-spirit-violet/90 transition-all active:scale-98 shadow-[0_0_15px_rgba(188,19,254,0.15)] select-none uppercase" style="display: none;">
-                Наступне фото
-            </button>
-        </div>
-
-        <!-- Spiritual Stats Deck -->
-        <div id="game-stats" class="w-full max-w-sm mx-auto bg-surface-container-lowest/90 backdrop-blur-2xl border border-white/5 rounded-2xl p-5 shadow-2xl relative select-none">
-            <!-- Stats Overhead Header -->
-            <div class="absolute -top-3 left-6 px-3 py-0.5 bg-void-black border border-white/10 rounded-full">
-                <span id="stats-title-header" class="font-mono text-[9px] uppercase tracking-[0.25em] text-on-surface-variant">Духовна статистика</span>
-            </div>
-            
-            <!-- Quick metrics summary -->
-            <div class="grid grid-cols-2 gap-4 mb-5 mt-2">
-                <div class="bg-surface-container-low/40 border border-white/5 rounded-2xl p-4 flex flex-col items-center justify-center space-y-1 text-center">
-                    <p class="font-mono text-[10px] text-on-surface-variant uppercase tracking-wider" id="stats-attempts-label">Спроби</p>
-                    <p class="font-headline text-2xl font-bold text-on-surface" id="stats-attempts">0/10</p>
-                </div>
-                <div class="bg-surface-container-low/40 border border-white/5 rounded-2xl p-4 flex flex-col items-center justify-center space-y-1 text-center">
-                    <p class="font-mono text-[10px] text-on-surface-variant uppercase tracking-wider" id="stats-success-rate-label">Успішність</p>
-                    <p class="font-headline text-2xl font-bold text-spirit-violet drop-shadow-[0_0_8px_rgba(188,19,254,0.3)]" id="stats-success-rate">0%</p>
-                </div>
-            </div>
-
-            <div class="flex justify-between items-center text-xs text-on-surface-variant py-2 border-t border-white/5 font-mono">
-                <div class="flex items-center gap-2">
-                    <span id="stats-success-label">Успішні</span>:
-                    <span class="font-headline text-sm font-semibold text-neon-cyan" id="stats-success">0</span>
-                </div>
-                <div class="flex items-center gap-2 text-right">
-                    <span id="stats-failure-label">Невдалі</span>:
-                    <span class="font-headline text-sm font-semibold text-spirit-violet" id="stats-failure">0</span>
-                </div>
-            </div>
-            
-            <!-- Ritual Path Runes -->
-            <div class="pt-4 border-t border-white/5">
-                <div class="flex flex-col gap-3">
-                    <div class="flex justify-between items-center font-mono text-[10px] text-on-surface-variant uppercase tracking-wider">
-                        <span id="stats-guess-history-label">Історія</span>
-                        <span id="stats-player-info" class="text-ritual-gold"></span>
-                    </div>
-                    <div id="stats-guess-history" class="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-3.5 py-1">
-                        <!-- Dynamically filled with beautiful circles and durations -->
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Initial Container for New Game button -->
-        <div class="new-game-container w-full max-w-sm mx-auto" id="new-game-initial-location">
-            <button id="new-game" class="w-full py-4 rounded-xl bg-gradient-to-r from-neon-cyan via-spirit-violet to-neon-cyan bg-[length:200%_auto] hover:bg-right text-void-black font-headline font-bold text-sm tracking-widest flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(0,240,255,0.2)] hover:shadow-[0_0_30px_rgba(188,19,254,0.4)] active:scale-98 transition-all duration-500 uppercase select-none">
-                <span class="material-symbols-outlined text-xl">auto_awesome</span>
-                Нова гра
-            </button>
-        </div>
-
-    </main>
-
-    <!-- Diagnostics Console -->
-    <div id="diagnostics-panel" class="w-full max-w-sm mx-auto px-4 mt-6" style="display: block;">
-        <details open class="bg-surface-container-low/80 border border-white/5 rounded-2xl overflow-hidden shadow-2xl transition-all duration-300">
-            <summary id="diag-summary-label" class="p-4 font-headline text-sm font-bold text-on-surface flex items-center gap-2 cursor-pointer list-none select-none hover:bg-lunar-gray/30">
-                📊 Діагностика & Логи
-            </summary>
-            <div class="p-4 pt-0 space-y-3 border-t border-white/5">
-                <div class="flex gap-2 flex-wrap">
-                    <button id="clear-logs-btn" class="bg-surface-container-lowest px-3 py-1.5 rounded-lg text-[10px] font-mono hover:bg-error-container/40 hover:text-error text-on-surface transition-all active:scale-95 border border-white/5">Очистити логи</button>
-                    <button id="run-diag-btn" class="bg-surface-container-lowest px-3 py-1.5 rounded-lg text-[10px] font-mono hover:bg-neon-cyan/20 hover:text-neon-cyan text-on-surface transition-all active:scale-95 border border-white/5">Запустити діагностику</button>
-                    <button id="copy-logs-btn" class="bg-surface-container-lowest px-3 py-1.5 rounded-lg text-[10px] font-mono hover:bg-spirit-violet/20 hover:text-spirit-violet text-on-surface transition-all active:scale-95 border border-white/5">Копіювати логи</button>
-                    <button id="force-reload-btn" class="bg-surface-container-lowest px-3 py-1.5 rounded-lg text-[10px] font-mono hover:bg-ritual-gold/20 hover:text-ritual-gold text-on-surface transition-all active:scale-95 border border-white/5">Оновити кеш 🔄</button>
-                </div>
-                <pre id="debug-log-output" class="bg-void-black/90 p-3 rounded-xl border border-white/5 font-mono text-[10px] max-h-48 overflow-y-auto leading-relaxed text-on-surface-variant/90 scrollbar-thin">Initializing diagnostics log...</pre>
-            </div>
-        </details>
     </div>
+    <div id="new-game-over-location" class="new-game-container" style="display: none; margin-top: 20px; margin-bottom: 20px;">
+        <!-- The #new-game button will be moved here when game is over -->
+    </div>
+    <div id="person-info" style="display: none;">
+        <div id="person-details"></div>
+    </div>
+    <div class="gender-buttons">
+        <button id="male-btn" aria-label="Вгадати чоловіка">Чоловік</button>
+        <button id="female-btn" aria-label="Вгадати жінку">Жінка</button>
+    </div>
+    <div class="status-buttons">
+        <button id="alive-btn" aria-label="Вгадати живого">Живий</button>
+        <button id="dead-btn" aria-label="Вгадати померлого">Померлий</button>
+    </div>
+    <div class="check-button">
+        <button id="check-btn" disabled>Перевірити</button>
+    </div>
+    <div class="next-person-container">
+        <button id="next-person" style="display: none;">Наступне фото</button>
+    </div>
+    
+    <div id="game-stats">
+        <div><span id="stats-player-info"></span></div> 
+        <div><span id="stats-attempts-label">Спроби</span>: <span id="stats-attempts">0/10</span></div>
+        <div><span id="stats-success-label">Успішні</span>: <span id="stats-success">0</span></div>
+        <div><span id="stats-failure-label">Невдалі</span>: <span id="stats-failure">0</span></div>
+        <div><span id="stats-success-rate-label">Відсоток успішних</span>: <span id="stats-success-rate">0%</span></div>
+        <div>
+            <div id="stats-guess-history-label">Історія</div>
+            <div id="stats-guess-history" style="text-align: center;">
+                <div id="stats-guess-history-icons">--</div>
+                <div id="stats-guess-history-durations">--</div>
+            </div>
+        </div>
+    </div>
+    <div class="new-game-container" id="new-game-initial-location">
+        <button id="new-game">Нова гра</button>
+    </div>
+    <div id="progress"></div>
 
-    <!-- App Version Badge -->
-    <div id="app-version-badge" class="font-mono text-[9px] text-on-surface-variant/40 tracking-[0.3em] uppercase cursor-pointer select-none hover:text-neon-cyan transition-colors mt-8 mb-12">v2.0.4</div>
-
-
-
-    <!-- Project Logic Script Imports -->
     <script type="module" src="/index.js"></script>
 </body>
 </html>
