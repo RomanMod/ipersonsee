@@ -132,9 +132,7 @@ function runSystemDiagnostics() {
     console.log('--- RUNNING DIAGNOSTICS ---');
     console.log(`[DIAG] Current Local Time: ${new Date().toString()}`);
     try {
-        if (typeof __APP_VERSION__ !== 'undefined') {
-            console.log(`[DIAG] Build App Version: v${__APP_VERSION__}`);
-        }
+        console.log(`[DIAG] Build App Version: v${APP_VERSION_FALLBACK}`);
         if (typeof __BUILD_TIME__ !== 'undefined') {
             console.log(`[DIAG] Build Completion Time: ${__BUILD_TIME__}`);
         }
@@ -666,15 +664,10 @@ function updateLanguage() {
     const forceReloadBtn = document.getElementById('force-reload-btn');
     if (forceReloadBtn) forceReloadBtn.textContent = selectedLanguage === 'uk' ? 'Оновити кеш 🔄' : selectedLanguage === 'ru' ? 'Обновить кэш 🔄' : 'Force Reload 🔄';
 
-    // Translate version badge dynamically using __APP_VERSION__ injected by Vite
+    // Translate version badge dynamically using APP_VERSION_FALLBACK
     const versionBadge = document.getElementById('app-version-badge');
     if (versionBadge) {
         let currentVersion = APP_VERSION_FALLBACK;
-        try {
-            if (typeof __APP_VERSION__ !== 'undefined') {
-                currentVersion = __APP_VERSION__;
-            }
-        } catch (e) {}
         
         let prefix = 'v';
         if (selectedLanguage === 'uk') prefix = 'Версія v';
@@ -2548,11 +2541,6 @@ function setupDiagnosticsPanel() {
                 }
 
                 let currentVersion = APP_VERSION_FALLBACK;
-                try {
-                    if (typeof __APP_VERSION__ !== 'undefined') {
-                        currentVersion = __APP_VERSION__;
-                    }
-                } catch (e) {}
 
                 if (window.diagnosticsEnabled) {
                     runSystemDiagnostics();
