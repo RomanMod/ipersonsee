@@ -309,7 +309,7 @@ const translations = {
         clearLogs: 'Очистити логи',
         runDiagnostics: 'Запустити діагностику',
         copyLogs: 'Копіювати логи',
-        appVersion: 'Версія v2.0.2',
+        appVersion: 'Версія v2.0.3',
         correctGuess: 'ВІРНО',
         incorrectGuess: 'НЕВІРНО'
     },
@@ -343,7 +343,7 @@ const translations = {
         clearLogs: 'Очистить логи',
         runDiagnostics: 'Запустить диагностику',
         copyLogs: 'Копировать логи',
-        appVersion: 'Версия v2.0.2',
+        appVersion: 'Версия v2.0.3',
         correctGuess: 'ВЕРНО',
         incorrectGuess: 'НЕВЕРНО'
     },
@@ -377,7 +377,7 @@ const translations = {
         clearLogs: 'Clear Logs',
         runDiagnostics: 'Run Diagnostics',
         copyLogs: 'Copy Logs',
-        appVersion: 'Version v2.0.2',
+        appVersion: 'Version v2.0.3',
         correctGuess: 'CORRECT',
         incorrectGuess: 'INCORRECT'
     },
@@ -411,7 +411,7 @@ const translations = {
         clearLogs: '⊸⍟⊸ ⊸⍟⊸',
         runDiagnostics: '⊸⍟⊸',
         copyLogs: '⊸⍟⊸',
-        appVersion: '⊸⍟⊸ v2.0.2',
+        appVersion: '⊸⍟⊸ v2.0.3',
         correctGuess: '✓ ⊸⍟⊸',
         incorrectGuess: '✗ ⊸⍟⊸'
     }
@@ -639,11 +639,13 @@ function updateLanguage() {
     if (runDiagnosticsBtn) runDiagnosticsBtn.textContent = texts.runDiagnostics || 'Запустити діагностику';
     const copyLogsBtn = document.getElementById('copy-logs-btn');
     if (copyLogsBtn) copyLogsBtn.textContent = texts.copyLogs || 'Копіювати логи';
+    const forceReloadBtn = document.getElementById('force-reload-btn');
+    if (forceReloadBtn) forceReloadBtn.textContent = selectedLanguage === 'uk' ? 'Оновити кеш 🔄' : selectedLanguage === 'ru' ? 'Обновить кэш 🔄' : 'Force Reload 🔄';
 
     // Translate version badge dynamically using __APP_VERSION__ injected by Vite
     const versionBadge = document.getElementById('app-version-badge');
     if (versionBadge) {
-        let currentVersion = '2.0.2';
+        let currentVersion = '2.0.3';
         try {
             if (typeof __APP_VERSION__ !== 'undefined') {
                 currentVersion = __APP_VERSION__;
@@ -1102,14 +1104,213 @@ async function loadImageWithFallback(url, element) {
     });
 }
 
-const WIKIDATA_QUERY_TIMEOUT_MS = 120000; 
+const WIKIDATA_QUERY_TIMEOUT_MS = 15000; 
 let sparqlQueuePromise = Promise.resolve();
 
+const offlinePeople = [
+    // Male, Alive
+    {
+        person: { value: "https://en.wikipedia.org/wiki/Elon_Musk" },
+        personLabel: { value: "Elon Musk" },
+        image: { value: "https://upload.wikimedia.org/wikipedia/commons/c/cb/Elon_Musk_Royal_Society_cropped.jpg" },
+        gender: { value: "http://www.wikidata.org/entity/Q6581097" },
+        birthDate: { value: "1971-06-28T00:00:00Z" },
+        isOfflineFallback: true,
+        gender_string: "male",
+        status_string: "alive"
+    },
+    {
+        person: { value: "https://en.wikipedia.org/wiki/Volodymyr_Zelenskyy" },
+        personLabel: { value: "Volodymyr Zelenskyy" },
+        image: { value: "https://upload.wikimedia.org/wikipedia/commons/9/9c/Volodymyr_Zelenskyy_Kyiv_2022_%28cropped%29.jpg" },
+        gender: { value: "http://www.wikidata.org/entity/Q6581097" },
+        birthDate: { value: "1978-01-25T00:00:00Z" },
+        isOfflineFallback: true,
+        gender_string: "male",
+        status_string: "alive"
+    },
+    {
+        person: { value: "https://en.wikipedia.org/wiki/Vitali_Klitschko" },
+        personLabel: { value: "Vitali Klitschko" },
+        image: { value: "https://upload.wikimedia.org/wikipedia/commons/c/cb/Vitali_Klitschko_June_2015.jpg" },
+        gender: { value: "http://www.wikidata.org/entity/Q6581097" },
+        birthDate: { value: "1971-07-19T00:00:00Z" },
+        isOfflineFallback: true,
+        gender_string: "male",
+        status_string: "alive"
+    },
+    {
+        person: { value: "https://en.wikipedia.org/wiki/Keanu_Reeves" },
+        personLabel: { value: "Keanu Reeves" },
+        image: { value: "https://upload.wikimedia.org/wikipedia/commons/3/33/Keanu_Reeves_2014_cropped.jpg" },
+        gender: { value: "http://www.wikidata.org/entity/Q6581097" },
+        birthDate: { value: "1964-09-02T00:00:00Z" },
+        isOfflineFallback: true,
+        gender_string: "male",
+        status_string: "alive"
+    },
+    // Male, Deceased
+    {
+        person: { value: "https://en.wikipedia.org/wiki/Albert_Einstein" },
+        personLabel: { value: "Albert Einstein" },
+        image: { value: "https://upload.wikimedia.org/wikipedia/commons/d/d3/Albert_Einstein_Head.jpg" },
+        gender: { value: "http://www.wikidata.org/entity/Q6581097" },
+        birthDate: { value: "1879-03-14T00:00:00Z" },
+        deathDate: { value: "1955-04-18T00:00:00Z" },
+        isOfflineFallback: true,
+        gender_string: "male",
+        status_string: "deceased"
+    },
+    {
+        person: { value: "https://en.wikipedia.org/wiki/Taras_Shevchenko" },
+        personLabel: { value: "Taras Shevchenko" },
+        image: { value: "https://upload.wikimedia.org/wikipedia/commons/a/af/Tarass_Chevtchenko_1859.jpg" },
+        gender: { value: "http://www.wikidata.org/entity/Q6581097" },
+        birthDate: { value: "1814-03-09T00:00:00Z" },
+        deathDate: { value: "1861-03-10T00:00:00Z" },
+        isOfflineFallback: true,
+        gender_string: "male",
+        status_string: "deceased"
+    },
+    {
+        person: { value: "https://en.wikipedia.org/wiki/Steve_Jobs" },
+        personLabel: { value: "Steve Jobs" },
+        image: { value: "https://upload.wikimedia.org/wikipedia/commons/d/dc/Steve_Jobs_Headshot_2010-CROP.jpg" },
+        gender: { value: "http://www.wikidata.org/entity/Q6581097" },
+        birthDate: { value: "1955-02-24T00:00:00Z" },
+        deathDate: { value: "2011-10-05T00:00:00Z" },
+        isOfflineFallback: true,
+        gender_string: "male",
+        status_string: "deceased"
+    },
+    {
+        person: { value: "https://en.wikipedia.org/wiki/Stephen_Hawking" },
+        personLabel: { value: "Stephen Hawking" },
+        image: { value: "https://upload.wikimedia.org/wikipedia/commons/e/eb/Stephen_Hawking.StarChild.jpg" },
+        gender: { value: "http://www.wikidata.org/entity/Q6581097" },
+        birthDate: { value: "1942-01-08T00:00:00Z" },
+        deathDate: { value: "2018-03-14T00:00:00Z" },
+        isOfflineFallback: true,
+        gender_string: "male",
+        status_string: "deceased"
+    },
+    // Female, Alive
+    {
+        person: { value: "https://en.wikipedia.org/wiki/Lina_Kostenko" },
+        personLabel: { value: "Lina Kostenko" },
+        image: { value: "https://upload.wikimedia.org/wikipedia/commons/f/fb/Lina_Kostenko_cropped.jpg" },
+        gender: { value: "http://www.wikidata.org/entity/Q6581072" },
+        birthDate: { value: "1930-03-19T00:00:00Z" },
+        isOfflineFallback: true,
+        gender_string: "female",
+        status_string: "alive"
+    },
+    {
+        person: { value: "https://en.wikipedia.org/wiki/Taylor_Swift" },
+        personLabel: { value: "Taylor Swift" },
+        image: { value: "https://upload.wikimedia.org/wikipedia/commons/b/b5/191125_Taylor_Swift_at_the_2019_American_Music_Awards_%28cropped%29.jpg" },
+        gender: { value: "http://www.wikidata.org/entity/Q6581072" },
+        birthDate: { value: "1989-12-13T00:00:00Z" },
+        isOfflineFallback: true,
+        gender_string: "female",
+        status_string: "alive"
+    },
+    {
+        person: { value: "https://en.wikipedia.org/wiki/Ruslana" },
+        personLabel: { value: "Ruslana" },
+        image: { value: "https://upload.wikimedia.org/wikipedia/commons/3/30/Ruslana_Lyzhychko_2013-12-04_01.jpg" },
+        gender: { value: "http://www.wikidata.org/entity/Q6581072" },
+        birthDate: { value: "1973-05-24T00:00:00Z" },
+        isOfflineFallback: true,
+        gender_string: "female",
+        status_string: "alive"
+    },
+    {
+        person: { value: "https://en.wikipedia.org/wiki/Angela_Merkel" },
+        personLabel: { value: "Angela Merkel" },
+        image: { value: "https://upload.wikimedia.org/wikipedia/commons/2/2d/Angela_Merkel_2019_cropped.jpg" },
+        gender: { value: "http://www.wikidata.org/entity/Q6581072" },
+        birthDate: { value: "1954-07-17T00:00:00Z" },
+        isOfflineFallback: true,
+        gender_string: "female",
+        status_string: "alive"
+    },
+    // Female, Deceased
+    {
+        person: { value: "https://en.wikipedia.org/wiki/Marie_Curie" },
+        personLabel: { value: "Marie Curie" },
+        image: { value: "https://upload.wikimedia.org/wikipedia/commons/c/c8/Marie_Curie_c1920.jpg" },
+        gender: { value: "http://www.wikidata.org/entity/Q6581072" },
+        birthDate: { value: "1867-11-07T00:00:00Z" },
+        deathDate: { value: "1934-07-04T00:00:00Z" },
+        isOfflineFallback: true,
+        gender_string: "female",
+        status_string: "deceased"
+    },
+    {
+        person: { value: "https://en.wikipedia.org/wiki/Lesya_Ukrainka" },
+        personLabel: { value: "Lesya Ukrainka" },
+        image: { value: "https://upload.wikimedia.org/wikipedia/commons/d/dd/Lesya_Ukrainka.jpg" },
+        gender: { value: "http://www.wikidata.org/entity/Q6581072" },
+        birthDate: { value: "1871-02-25T00:00:00Z" },
+        deathDate: { value: "1913-08-01T00:00:00Z" },
+        isOfflineFallback: true,
+        gender_string: "female",
+        status_string: "deceased"
+    },
+    {
+        person: { value: "https://en.wikipedia.org/wiki/Elizabeth_II" },
+        personLabel: { value: "Elizabeth II" },
+        image: { value: "https://upload.wikimedia.org/wikipedia/commons/b/b6/Queen_Elizabeth_II_in_March_2015.jpg" },
+        gender: { value: "http://www.wikidata.org/entity/Q6581072" },
+        birthDate: { value: "1926-04-21T00:00:00Z" },
+        deathDate: { value: "2022-09-08T00:00:00Z" },
+        isOfflineFallback: true,
+        gender_string: "female",
+        status_string: "deceased"
+    },
+    {
+        person: { value: "https://en.wikipedia.org/wiki/Marilyn_Monroe" },
+        personLabel: { value: "Marilyn Monroe" },
+        image: { value: "https://upload.wikimedia.org/wikipedia/commons/0/0a/Marilyn_Monroe_photo_portait_Cabinet_Card_cropped.jpg" },
+        gender: { value: "http://www.wikidata.org/entity/Q6581072" },
+        birthDate: { value: "1926-06-01T00:00:00Z" },
+        deathDate: { value: "1962-08-05T00:00:00Z" },
+        isOfflineFallback: true,
+        gender_string: "female",
+        status_string: "deceased"
+    }
+];
+
+function getOfflineFallbackPerson(category) {
+    const gender = category?.gender || 'male';
+    const status = category?.status || 'alive';
+    const matches = offlinePeople.filter(p => p.gender_string === gender && p.status_string === status);
+    if (matches.length > 0) {
+        const selected = matches[Math.floor(Math.random() * matches.length)];
+        console.log(`[OFFLINE_FALLBACK] Selected offline backup candidate: ${selected.personLabel.value} (${gender}-${status})`);
+        return selected;
+    }
+    const selected = offlinePeople[Math.floor(Math.random() * offlinePeople.length)];
+    console.log(`[OFFLINE_FALLBACK] Selected random backup candidate: ${selected.personLabel.value}`);
+    return selected;
+}
+
 async function fetchPersonData(useRandom = false, category = null) {
+    const categoryKey = `${category?.gender || 'any'}-${category?.status || 'any'}`;
+    try {
+        return await fetchPersonDataInner(useRandom, category);
+    } catch (err) {
+        console.warn(`[WIKIDATA_FETCH_ERROR_FALLBACK] Wikidata fetch failed for ${categoryKey}: ${err.message}. Invoking offline fallback...`);
+        return getOfflineFallbackPerson(category);
+    }
+}
+
+async function fetchPersonDataInner(useRandom = false, category = null) {
     const start = performance.now();
     let query;
     let attempts = 0;
-    const maxQueryAttempts = 5;
+    const maxQueryAttempts = 2;
     const categoryKey = `${category?.gender || 'any'}-${category?.status || 'any'}`;
     const cacheKey = `${useRandom}-${categoryKey}`;
     
@@ -1268,13 +1469,17 @@ async function startPreloadNextAvailablePerson() {
     console.log(`[PRELOAD] Starting preload for: ${personBindingForPreload.personLabel.value}`);
 
     try {
-        const fileName = decodeURIComponent(personBindingForPreload.image.value.split('/').pop());
-        const commonsUrl = await getCommonsImageUrl(fileName);
-
-        if (!commonsUrl) {
-            console.warn(`[PRELOAD_WARN] No Commons URL for ${fileName} (person: ${personBindingForPreload.personLabel.value}) during preload. Preload for this item skipped.`);
-            isCurrentlyPreloading = false;
-            return;
+        let commonsUrl;
+        if (personBindingForPreload.isOfflineFallback) {
+            commonsUrl = personBindingForPreload.image.value;
+        } else {
+            const fileName = decodeURIComponent(personBindingForPreload.image.value.split('/').pop());
+            commonsUrl = await getCommonsImageUrl(fileName);
+            if (!commonsUrl) {
+                console.warn(`[PRELOAD_WARN] No Commons URL for ${fileName} (person: ${personBindingForPreload.personLabel.value}) during preload. Preload for this item skipped.`);
+                isCurrentlyPreloading = false;
+                return;
+            }
         }
 
         if (settings.excludeBlackAndWhite) {
@@ -1459,12 +1664,17 @@ async function loadPersonFromData(personDataToDisplay, category = null) {
                      continue; 
                 }
 
-                const fileName = decodeURIComponent(currentPersonCandidate.image.value.split('/').pop());
-                const commonsUrl = await getCommonsImageUrl(fileName);
-                if (!commonsUrl) {
-                     console.warn(`[LOAD_PERSON_WARN] No Commons URL for ${fileName}. Fetching new person.`);
-                     currentPersonCandidate = await fetchPersonData(true, category);
-                     continue;
+                let commonsUrl;
+                if (currentPersonCandidate.isOfflineFallback) {
+                    commonsUrl = currentPersonCandidate.image.value;
+                } else {
+                    const fileName = decodeURIComponent(currentPersonCandidate.image.value.split('/').pop());
+                    commonsUrl = await getCommonsImageUrl(fileName);
+                    if (!commonsUrl) {
+                        console.warn(`[LOAD_PERSON_WARN] No Commons URL for ${fileName}. Fetching new person.`);
+                        currentPersonCandidate = await fetchPersonData(true, category);
+                        continue;
+                    }
                 }
                 
                 if (settings.excludeBlackAndWhite) {
@@ -2230,6 +2440,16 @@ function setupDiagnosticsPanel() {
         });
     }
 
+    const forceReloadBtn = document.getElementById('force-reload-btn');
+    if (forceReloadBtn) {
+        forceReloadBtn.addEventListener('click', () => {
+            console.log('[DIAG] Force Reload triggered by user. Clearing cache and reloading...');
+            const url = new URL(window.location.href);
+            url.searchParams.set('cache_bust', Date.now().toString());
+            window.location.replace(url.toString());
+        });
+    }
+
     const clearBtn = document.getElementById('clear-logs-btn');
     if (clearBtn) {
         clearBtn.addEventListener('click', () => {
@@ -2289,7 +2509,7 @@ function setupDiagnosticsPanel() {
                     diagPanel.style.display = window.diagnosticsEnabled ? 'block' : 'none';
                 }
 
-                let currentVersion = '2.0.2';
+                let currentVersion = '2.0.3';
                 try {
                     if (typeof __APP_VERSION__ !== 'undefined') {
                         currentVersion = __APP_VERSION__;
@@ -2323,7 +2543,7 @@ function setupDiagnosticsPanel() {
     }
 }
 
-window.onload = () => {
+const initApp = () => {
     console.log('[WINDOW_ONLOAD] Page loaded. Initializing application state.');
 
     if (window.Telegram && window.Telegram.WebApp) {
@@ -2386,8 +2606,10 @@ window.onload = () => {
     console.log(`[WINDOW_ONLOAD] Is first launch or reset: ${isFirstLaunchOrReset}`);
     
     const personInfoOnLoad = document.getElementById('person-info');
-    personInfoOnLoad.style.display = 'none'; 
-    personInfoOnLoad.classList.remove('correct', 'incorrect'); 
+    if (personInfoOnLoad) {
+        personInfoOnLoad.style.display = 'none'; 
+        personInfoOnLoad.classList.remove('correct', 'incorrect'); 
+    }
     const statusBadge = document.getElementById('person-status-badge');
     if (statusBadge) statusBadge.classList.add('hidden');
 
@@ -2476,3 +2698,9 @@ window.onload = () => {
 
     console.log('[WINDOW_ONLOAD] Page load sequence finished.');
 };
+
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    initApp();
+} else {
+    window.addEventListener('DOMContentLoaded', initApp);
+}
