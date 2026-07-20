@@ -1,3 +1,7 @@
+// === GLOBAL APPLICATION CONFIGURATION ===
+// Change the version number here in exactly one place!
+const APP_VERSION_FALLBACK = '2.0.5';
+
 // Safe localStorage wrapper to prevent crashes in sandboxed iframe or Telegram WebView environments
 const localStorage = (() => {
     let storage = {};
@@ -309,7 +313,7 @@ const translations = {
         clearLogs: 'Очистити логи',
         runDiagnostics: 'Запустити діагностику',
         copyLogs: 'Копіювати логи',
-        appVersion: 'Версія v2.0.4',
+        appVersion: `Версія v${APP_VERSION_FALLBACK}`,
         correctGuess: 'ВІРНО',
         incorrectGuess: 'НЕВІРНО'
     },
@@ -343,7 +347,7 @@ const translations = {
         clearLogs: 'Очистить логи',
         runDiagnostics: 'Запустить диагностику',
         copyLogs: 'Копировать логи',
-        appVersion: 'Версия v2.0.4',
+        appVersion: `Версия v${APP_VERSION_FALLBACK}`,
         correctGuess: 'ВЕРНО',
         incorrectGuess: 'НЕВЕРНО'
     },
@@ -377,7 +381,7 @@ const translations = {
         clearLogs: 'Clear Logs',
         runDiagnostics: 'Run Diagnostics',
         copyLogs: 'Copy Logs',
-        appVersion: 'Version v2.0.4',
+        appVersion: `Version v${APP_VERSION_FALLBACK}`,
         correctGuess: 'CORRECT',
         incorrectGuess: 'INCORRECT'
     },
@@ -411,7 +415,7 @@ const translations = {
         clearLogs: '⊸⍟⊸ ⊸⍟⊸',
         runDiagnostics: '⊸⍟⊸',
         copyLogs: '⊸⍟⊸',
-        appVersion: '⊸⍟⊸ v2.0.4',
+        appVersion: `⊸⍟⊸ v${APP_VERSION_FALLBACK}`,
         correctGuess: '✓ ⊸⍟⊸',
         incorrectGuess: '✗ ⊸⍟⊸'
     }
@@ -420,7 +424,13 @@ const translations = {
 // Инициализация настроек
 let isNight = localStorage.getItem('theme') !== 'day';
 let selectedLanguage = localStorage.getItem('language') || 'uk'; // Default to Ukrainian
+if (!translations[selectedLanguage]) {
+    selectedLanguage = 'uk';
+}
 let gameMode = localStorage.getItem('mode') || 'open';
+if (gameMode !== 'open' && gameMode !== 'closed') {
+    gameMode = 'open';
+}
 
 // Google Analytics 4 Event Sender
 function sendGAEvent(eventName, eventParams = {}) {
@@ -484,8 +494,8 @@ console.log('[APP_INIT] Attempt Durations from localStorage:', attemptDurations)
 
 
 // Function to update the New Game button's position
-function updateNewGameButtonPosition() {
-    console.log('[UI_UPDATE] updateNewGameButtonPosition called. Attempts:', currentAttempts, 'Max:', maxAttempts);
+function updateNewGameButtonPosition(isInitialCall = false) {
+    console.log('[UI_UPDATE] updateNewGameButtonPosition called. Attempts:', currentAttempts, 'Max:', maxAttempts, 'IsInitialCall:', isInitialCall);
     if (!newGameBtn || !initialNewGameContainer || !gameOverNewGameContainer) {
         console.error("[UI_ERROR] Critical: New Game button or its containers not found for positioning.");
         return;
@@ -499,29 +509,38 @@ function updateNewGameButtonPosition() {
     }
 
     if (currentAttempts >= maxAttempts) {
-        console.log('[UI_UPDATE] Game is over, scheduling New Game button move to game over location in 5s.');
-        // Ensure the game over container is hidden initially while the timer runs
-        gameOverNewGameContainer.style.display = 'none';
-        // If the button is currently in the initial container, hide that container too,
-        // so the button doesn't remain visible at the bottom during the delay.
-        if (newGameBtn.parentElement === initialNewGameContainer) {
-            initialNewGameContainer.style.display = 'none';
-        }
-
-        newGameButtonTimeoutId = setTimeout(() => {
-            // Re-check the condition in case a new game started very quickly
-            if (currentAttempts >= maxAttempts) {
-                console.log('[UI_UPDATE_DELAYED] 5s timeout elapsed. Moving New Game button to game over location.');
-                if (newGameBtn.parentElement !== gameOverNewGameContainer) {
-                    gameOverNewGameContainer.appendChild(newGameBtn);
-                }
-                gameOverNewGameContainer.style.display = 'flex';
-                initialNewGameContainer.style.display = 'none'; // Ensure initial container remains hidden
-            } else {
-                console.log('[UI_UPDATE_DELAYED] 5s timeout elapsed, but game is no longer over. Button position likely handled by standard logic.');
+        if (isInitialCall) {
+            console.log('[UI_UPDATE] Game is over on initial load. Moving New Game button to game over location immediately.');
+            if (newGameBtn.parentElement !== gameOverNewGameContainer) {
+                gameOverNewGameContainer.appendChild(newGameBtn);
             }
-            newGameButtonTimeoutId = null;
-        }, 5000); // 5-second delay
+            gameOverNewGameContainer.style.display = 'flex';
+            initialNewGameContainer.style.display = 'none';
+        } else {
+            console.log('[UI_UPDATE] Game is over, scheduling New Game button move to game over location in 5s.');
+            // Ensure the game over container is hidden initially while the timer runs
+            gameOverNewGameContainer.style.display = 'none';
+            // If the button is currently in the initial container, hide that container too,
+            // so the button doesn't remain visible at the bottom during the delay.
+            if (newGameBtn.parentElement === initialNewGameContainer) {
+                initialNewGameContainer.style.display = 'none';
+            }
+
+            newGameButtonTimeoutId = setTimeout(() => {
+                // Re-check the condition in case a new game started very quickly
+                if (currentAttempts >= maxAttempts) {
+                    console.log('[UI_UPDATE_DELAYED] 5s timeout elapsed. Moving New Game button to game over location.');
+                    if (newGameBtn.parentElement !== gameOverNewGameContainer) {
+                        gameOverNewGameContainer.appendChild(newGameBtn);
+                    }
+                    gameOverNewGameContainer.style.display = 'flex';
+                    initialNewGameContainer.style.display = 'none'; // Ensure initial container remains hidden
+                } else {
+                    console.log('[UI_UPDATE_DELAYED] 5s timeout elapsed, but game is no longer over. Button position likely handled by standard logic.');
+                }
+                newGameButtonTimeoutId = null;
+            }, 5000); // 5-second delay
+        }
     } else {
         console.log('[UI_UPDATE] Game is active, moving New Game button to initial location.');
         if (newGameBtn.parentElement !== initialNewGameContainer) {
@@ -650,7 +669,7 @@ function updateLanguage() {
     // Translate version badge dynamically using __APP_VERSION__ injected by Vite
     const versionBadge = document.getElementById('app-version-badge');
     if (versionBadge) {
-        let currentVersion = '2.0.4';
+        let currentVersion = APP_VERSION_FALLBACK;
         try {
             if (typeof __APP_VERSION__ !== 'undefined') {
                 currentVersion = __APP_VERSION__;
@@ -2528,7 +2547,7 @@ function setupDiagnosticsPanel() {
                     diagPanel.style.display = window.diagnosticsEnabled ? 'block' : 'none';
                 }
 
-                let currentVersion = '2.0.4';
+                let currentVersion = APP_VERSION_FALLBACK;
                 try {
                     if (typeof __APP_VERSION__ !== 'undefined') {
                         currentVersion = __APP_VERSION__;
@@ -2687,7 +2706,7 @@ const initApp = () => {
         }
         updateCheckButtonState();
         updateGuessHistoryDisplay(); 
-        updateNewGameButtonPosition();
+        updateNewGameButtonPosition(true);
     }
     updateTelegramUserInfoDisplay(); 
 

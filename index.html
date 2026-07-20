@@ -20,6 +20,28 @@
     </script>
     <!-- End Google Analytics -->
     
+    <script>
+      window.onloadErrors = [];
+      window.onerror = function(message, source, lineno, colno, error) {
+          const errStr = 'Critical Error: ' + message + ' at ' + source + ':' + lineno + ':' + colno + (error && error.stack ? '\nStack:\n' + error.stack : '');
+          window.onloadErrors.push(errStr);
+          const errDiv = document.getElementById('critical-error-display');
+          if (errDiv) {
+              errDiv.style.display = 'block';
+              errDiv.textContent += errStr + '\n\n';
+          }
+      };
+      window.onunhandledrejection = function(event) {
+          const errStr = 'Unhandled Rejection: ' + event.reason + (event.reason && event.reason.stack ? '\nStack:\n' + event.reason.stack : '');
+          window.onloadErrors.push(errStr);
+          const errDiv = document.getElementById('critical-error-display');
+          if (errDiv) {
+              errDiv.style.display = 'block';
+              errDiv.textContent += errStr + '\n\n';
+          }
+      };
+    </script>
+    
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     
     <!-- Design System Fonts and Icons -->
@@ -60,6 +82,14 @@
     <link rel="stylesheet" href="/index.css">
 </head>
 <body class="text-on-surface font-body min-h-screen flex flex-col items-center selection:bg-neon-cyan selection:text-void-black overflow-x-hidden pb-24 transition-colors duration-300">
+
+    <!-- Critical Error Display Overlay -->
+    <div id="critical-error-display" style="display:none; background:#8b0000; color:#ffffff; padding:15px; font-family:monospace; font-size:12px; position:fixed; top:0; left:0; right:0; z-index:999999; max-height:50vh; overflow-y:auto; white-space:pre-wrap; border-bottom:3px solid #ff0000; box-shadow:0 4px 20px rgba(0,0,0,0.5);">
+        <div style="font-weight:bold; font-size:14px; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.05em; display:flex; justify-content:space-between; align-items:center;">
+            <span>🚨 Critical Startup Error</span>
+            <button onclick="this.parentElement.parentElement.style.display='none'" style="background:rgba(255,255,255,0.2); border:none; color:white; padding:2px 8px; border-radius:4px; cursor:pointer; font-size:10px;">Dismiss</button>
+        </div>
+    </div>
 
     <!-- Ambient Cosmic Vignette -->
     <div class="fixed inset-0 pointer-events-none z-[-1] bg-[radial-gradient(circle_at_center,rgba(188,19,254,0.03)_0%,rgba(0,0,0,0)_80%)]"></div>
@@ -274,6 +304,5 @@
 
     <!-- Project Logic Script Imports -->
     <script type="module" src="/index.js"></script>
-    <script type="module" src="/index.tsx"></script>
 </body>
 </html>
