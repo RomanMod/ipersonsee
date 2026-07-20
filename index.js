@@ -309,7 +309,7 @@ const translations = {
         clearLogs: 'Очистити логи',
         runDiagnostics: 'Запустити діагностику',
         copyLogs: 'Копіювати логи',
-        appVersion: 'Версія v2.0.3',
+        appVersion: 'Версія v2.0.4',
         correctGuess: 'ВІРНО',
         incorrectGuess: 'НЕВІРНО'
     },
@@ -343,7 +343,7 @@ const translations = {
         clearLogs: 'Очистить логи',
         runDiagnostics: 'Запустить диагностику',
         copyLogs: 'Копировать логи',
-        appVersion: 'Версия v2.0.3',
+        appVersion: 'Версия v2.0.4',
         correctGuess: 'ВЕРНО',
         incorrectGuess: 'НЕВЕРНО'
     },
@@ -377,7 +377,7 @@ const translations = {
         clearLogs: 'Clear Logs',
         runDiagnostics: 'Run Diagnostics',
         copyLogs: 'Copy Logs',
-        appVersion: 'Version v2.0.3',
+        appVersion: 'Version v2.0.4',
         correctGuess: 'CORRECT',
         incorrectGuess: 'INCORRECT'
     },
@@ -411,7 +411,7 @@ const translations = {
         clearLogs: '⊸⍟⊸ ⊸⍟⊸',
         runDiagnostics: '⊸⍟⊸',
         copyLogs: '⊸⍟⊸',
-        appVersion: '⊸⍟⊸ v2.0.3',
+        appVersion: '⊸⍟⊸ v2.0.4',
         correctGuess: '✓ ⊸⍟⊸',
         incorrectGuess: '✗ ⊸⍟⊸'
     }
@@ -456,8 +456,13 @@ function sendGAEvent(eventName, eventParams = {}) {
 }
 
 
-document.body.classList.toggle('day', !isNight);
-document.querySelector('#language-select .selected-option').textContent = selectedLanguage === 'uk' ? 'Українська' : selectedLanguage === 'ru' ? 'Русский' : selectedLanguage === 'en' ? 'English' : '👽 ⊸⍟⊸';
+if (document.body) {
+    document.body.classList.toggle('day', !isNight);
+}
+const languageSelectBtn = document.querySelector('#language-select .selected-option');
+if (languageSelectBtn) {
+    languageSelectBtn.textContent = selectedLanguage === 'uk' ? 'Українська' : selectedLanguage === 'ru' ? 'Русский' : selectedLanguage === 'en' ? 'English' : '👽 ⊸⍟⊸';
+}
 const modeToggleBtnInit = document.getElementById('mode-toggle');
 if (modeToggleBtnInit) {
     modeToggleBtnInit.textContent = translations[selectedLanguage][`mode${gameMode.charAt(0).toUpperCase() + gameMode.slice(1)}`];
@@ -645,7 +650,7 @@ function updateLanguage() {
     // Translate version badge dynamically using __APP_VERSION__ injected by Vite
     const versionBadge = document.getElementById('app-version-badge');
     if (versionBadge) {
-        let currentVersion = '2.0.3';
+        let currentVersion = '2.0.4';
         try {
             if (typeof __APP_VERSION__ !== 'undefined') {
                 currentVersion = __APP_VERSION__;
@@ -695,36 +700,38 @@ document.querySelectorAll('.custom-select').forEach(select => {
     const selectedOption = select.querySelector('.selected-option');
     const options = select.querySelector('.options');
 
-    selectedOption.addEventListener('click', () => {
-        const wasOpen = options.style.display !== 'none';
-        options.style.display = wasOpen ? 'none' : 'block';
-        console.log(`[UI_EVENT] Custom select '${select.id}' ${wasOpen ? 'closed' : 'opened'}.`);
-    });
+    if (selectedOption && options) {
+        selectedOption.addEventListener('click', () => {
+            const wasOpen = options.style.display !== 'none';
+            options.style.display = wasOpen ? 'none' : 'block';
+            console.log(`[UI_EVENT] Custom select '${select.id}' ${wasOpen ? 'closed' : 'opened'}.`);
+        });
 
-    options.addEventListener('click', (e) => {
-        if (e.target.tagName === 'LI') {
-            const value = e.target.getAttribute('data-value');
-            console.log(`[UI_EVENT] Option selected in '${select.id}': Value = ${value}, Text = ${e.target.textContent}`);
-            if (select.id === 'language-select') {
-                const oldLanguage = selectedLanguage;
-                selectedLanguage = value;
-                localStorage.setItem('language', selectedLanguage);
-                console.log(`[STATE_CHANGE] Language changed from ${oldLanguage} to ${selectedLanguage}. Saved to localStorage.`);
-                if (oldLanguage !== selectedLanguage) {
-                    sendGAEvent('language_changed', { new_language: selectedLanguage }); // Changed from new_lang
+        options.addEventListener('click', (e) => {
+            if (e.target.tagName === 'LI') {
+                const value = e.target.getAttribute('data-value');
+                console.log(`[UI_EVENT] Option selected in '${select.id}': Value = ${value}, Text = ${e.target.textContent}`);
+                if (select.id === 'language-select') {
+                    const oldLanguage = selectedLanguage;
+                    selectedLanguage = value;
+                    localStorage.setItem('language', selectedLanguage);
+                    console.log(`[STATE_CHANGE] Language changed from ${oldLanguage} to ${selectedLanguage}. Saved to localStorage.`);
+                    if (oldLanguage !== selectedLanguage) {
+                        sendGAEvent('language_changed', { new_language: selectedLanguage }); // Changed from new_lang
+                    }
+                    updateLanguage();
                 }
-                updateLanguage();
+                selectedOption.textContent = e.target.textContent;
+                options.style.display = 'none';
             }
-            selectedOption.textContent = e.target.textContent;
-            options.style.display = 'none';
-        }
-    });
+        });
 
-    document.addEventListener('click', (e) => {
-        if (!select.contains(e.target) && options.style.display !== 'none') {
-            options.style.display = 'none';
-        }
-    });
+        document.addEventListener('click', (e) => {
+            if (!select.contains(e.target) && options.style.display !== 'none') {
+                options.style.display = 'none';
+            }
+        });
+    }
 });
 
 // Кнопка прямого переключения режима игры
@@ -748,7 +755,9 @@ if (themeToggleBtn) {
     themeToggleBtn.addEventListener('click', () => {
         isNight = !isNight;
         const newTheme = isNight ? 'night' : 'day';
-        document.body.classList.toggle('day', !isNight);
+        if (document.body) {
+            document.body.classList.toggle('day', !isNight);
+        }
         localStorage.setItem('theme', newTheme);
         console.log(`[THEME_CHANGE] Theme changed to: ${newTheme}. Saved to localStorage.`);
         sendGAEvent('theme_changed', { new_theme: newTheme });
@@ -770,12 +779,12 @@ function updateModeVisibility() {
     const personImage = document.getElementById('person-image');
     const overlay = document.getElementById('overlay');
 
-    statusButtons.style.display = 'none';
-    genderButtons.style.display = 'none';
+    if (statusButtons) statusButtons.style.display = 'none';
+    if (genderButtons) genderButtons.style.display = 'none';
     if (checkBtnElement) checkBtnElement.style.display = 'none';
     console.log('[UI_UPDATE_MODE] Status, Gender, and Check buttons initially hidden.');
 
-    const imageIsReady = personImage.classList.contains('loaded');
+    const imageIsReady = personImage ? personImage.classList.contains('loaded') : false;
     const gameIsActive = currentAttempts < maxAttempts;
     const canMakeGuess = !hasChecked;
 
@@ -785,18 +794,18 @@ function updateModeVisibility() {
         console.log('[UI_UPDATE_MODE] Conditions met for showing buttons, starting 3s timeout.');
         buttonVisibilityTimeoutId = setTimeout(() => {
             console.log('[UI_TIMEOUT_ELAPSED] 3s timeout elapsed. Showing buttons.');
-            statusButtons.style.display = 'flex';
+            if (statusButtons) statusButtons.style.display = 'flex';
             if (checkBtnElement) {
                 checkBtnElement.style.display = 'inline-block';
                 updateCheckButtonState(); 
-                 console.log('[UI_UPDATE_MODE_TIMEOUT] Check button shown and state updated.');
+                console.log('[UI_UPDATE_MODE_TIMEOUT] Check button shown and state updated.');
             }
 
             if (gameMode === 'closed') {
-                genderButtons.style.display = 'flex';
-                 console.log('[UI_UPDATE_MODE_TIMEOUT] Closed mode: Gender and Status buttons shown.');
+                if (genderButtons) genderButtons.style.display = 'flex';
+                console.log('[UI_UPDATE_MODE_TIMEOUT] Closed mode: Gender and Status buttons shown.');
             } else {
-                genderButtons.style.display = 'none'; 
+                if (genderButtons) genderButtons.style.display = 'none'; 
                 console.log('[UI_UPDATE_MODE_TIMEOUT] Open mode: Status buttons shown, Gender buttons hidden.');
             }
             buttonVisibilityTimeoutId = null;
@@ -807,20 +816,26 @@ function updateModeVisibility() {
 
     if (gameMode === 'closed') {
         if (hasChecked) { 
-            overlay.classList.add('hidden');
-            personImage.style.opacity = '';
-            personImage.style.visibility = '';
+            if (overlay) overlay.classList.add('hidden');
+            if (personImage) {
+                personImage.style.opacity = '';
+                personImage.style.visibility = '';
+            }
             console.log('[UI_UPDATE_MODE_OVERLAY] Closed mode, checked: Overlay hidden, Image shown.');
         } else { 
-            overlay.classList.remove('hidden');
-            personImage.style.opacity = '0';
-            personImage.style.visibility = 'hidden';
+            if (overlay) overlay.classList.remove('hidden');
+            if (personImage) {
+                personImage.style.opacity = '0';
+                personImage.style.visibility = 'hidden';
+            }
             console.log('[UI_UPDATE_MODE_OVERLAY] Closed mode, not checked: Overlay shown, Image completely hidden.');
         }
-    } else { 
-        overlay.classList.add('hidden');
-        personImage.style.opacity = '';
-        personImage.style.visibility = '';
+    } else {
+        if (overlay) overlay.classList.add('hidden');
+        if (personImage) {
+            personImage.style.opacity = '';
+            personImage.style.visibility = '';
+        }
         console.log('[UI_UPDATE_MODE_OVERLAY] Open mode: Overlay hidden, Image shown.');
     }
 }
@@ -1577,7 +1592,8 @@ async function loadPersonFromData(personDataToDisplay, category = null) {
         }
         circularProgressContainer.classList.remove('hidden');
         circularProgressContainer.setAttribute('aria-valuenow', '0');
-        document.getElementById('circular-progress-bar').style.strokeDashoffset = 100;
+        const cpBar = document.getElementById('circular-progress-bar');
+        if (cpBar) cpBar.style.strokeDashoffset = 100;
         console.log('[LOAD_PERSON_UI_PREP] Image src cleared, progress UI active.');
 
         requestAnimationFrame(() => {
@@ -1710,7 +1726,8 @@ async function loadPersonFromData(personDataToDisplay, category = null) {
                             personImage.style.opacity = '';
                         }
                         circularProgressContainer.classList.remove('hidden');
-                        document.getElementById('circular-progress-bar').style.strokeDashoffset = 100;
+                        const cpBarSub = document.getElementById('circular-progress-bar');
+                        if (cpBarSub) cpBarSub.style.strokeDashoffset = 100;
                      });
                 } else {
                     console.error(`[LOAD_PERSON_FAILURE] Max image fetch attempts (${maxImageLoadAttempts}) reached for this slot. No image loaded.`);
@@ -1796,11 +1813,13 @@ function updateUI(personToDisplay) {
         }
 
         const nextPersonBtn = document.getElementById('next-person');
-        if (hasChecked && currentAttempts < maxAttempts) {
-            nextPersonBtn.style.display = 'block';
-            nextPersonBtn.textContent = texts.nextPerson; 
-        } else {
-            nextPersonBtn.style.display = 'none';
+        if (nextPersonBtn) {
+            if (hasChecked && currentAttempts < maxAttempts) {
+                nextPersonBtn.style.display = 'block';
+                nextPersonBtn.textContent = texts.nextPerson; 
+            } else {
+                nextPersonBtn.style.display = 'none';
+            }
         }
         
         updateModeVisibility(); 
@@ -2509,7 +2528,7 @@ function setupDiagnosticsPanel() {
                     diagPanel.style.display = window.diagnosticsEnabled ? 'block' : 'none';
                 }
 
-                let currentVersion = '2.0.3';
+                let currentVersion = '2.0.4';
                 try {
                     if (typeof __APP_VERSION__ !== 'undefined') {
                         currentVersion = __APP_VERSION__;
