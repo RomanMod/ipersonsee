@@ -1,6 +1,95 @@
 // === GLOBAL APPLICATION CONFIGURATION ===
 // Change the version number here in exactly one place!
-const APP_VERSION_FALLBACK = '2.0.6';
+const APP_VERSION_FALLBACK = '2.0.7';
+
+// === LOG CAPTURE & DIAGNOSTICS CODE (MUST BE AT THE VERY TOP) ===
+const originalConsoleLog = console.log;
+const originalConsoleWarn = console.warn;
+const originalConsoleError = console.error;
+
+window.diagnosticsEnabled = true; // Temporarily force-enable diagnostics for troubleshooting
+window.appLogs = [];
+
+// Helper for early safe localStorage access before wrapper is defined
+const safeGetItem = (key) => {
+    try {
+        if (typeof window !== 'undefined' && 'localStorage' in window && window.localStorage !== null) {
+            return window.localStorage.getItem(key);
+        }
+    } catch (e) {}
+    return null;
+};
+
+const safeSetItem = (key, value) => {
+    try {
+        if (typeof window !== 'undefined' && 'localStorage' in window && window.localStorage !== null) {
+            window.localStorage.setItem(key, value);
+        }
+    } catch (e) {}
+};
+
+try {
+    if (window.diagnosticsEnabled) {
+        const savedLogsString = safeGetItem('appLogs_persistent');
+        if (savedLogsString) {
+            window.appLogs = JSON.parse(savedLogsString);
+            window.appLogs.push(`[${new Date().toISOString().split('T')[1].slice(0, 11)}] [SYSTEM] --- APPLICATION RESTARTED (PREVIOUS LOGS PRESERVED) ---`);
+            if (window.appLogs.length > 500) {
+                window.appLogs.shift();
+            }
+        }
+    }
+} catch (e) {
+    window.appLogs = [];
+}
+
+function captureLog(type, args) {
+    if (!window.diagnosticsEnabled) {
+        return;
+    }
+    const timeStr = new Date().toISOString().split('T')[1].slice(0, 11);
+    const message = args.map(arg => {
+        if (typeof arg === 'object') {
+            try { return JSON.stringify(arg); } catch (e) { return String(arg); }
+        }
+        return String(arg);
+    }).join(' ');
+    
+    window.appLogs.push(`[${timeStr}] [${type}] ${message}`);
+    if (window.appLogs.length > 500) {
+        window.appLogs.shift();
+    }
+    
+    safeSetItem('appLogs_persistent', JSON.stringify(window.appLogs));
+    
+    const debugPre = document.getElementById('debug-log-output');
+    if (debugPre) {
+        debugPre.textContent = window.appLogs.join('\n');
+        // Auto scroll to bottom
+        debugPre.scrollTop = debugPre.scrollHeight;
+    }
+}
+
+console.log = function(...args) {
+    originalConsoleLog.apply(console, args);
+    captureLog('LOG', args);
+};
+console.warn = function(...args) {
+    originalConsoleWarn.apply(console, args);
+    captureLog('WARN', args);
+};
+console.error = function(...args) {
+    originalConsoleError.apply(console, args);
+    captureLog('ERROR', args);
+};
+
+window.addEventListener('error', (event) => {
+    console.error(`[UNCAUGHT_ERROR] Got uncaught exception in window: ${event.message} at ${event.filename}:${event.lineno}:${event.colno}`);
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+    console.error(`[UNHANDLED_PROMISE] Got unhandled rejection: ${event.reason}`);
+});
 
 // Safe localStorage wrapper to prevent crashes in sandboxed iframe or Telegram WebView environments
 const localStorage = (() => {
@@ -85,79 +174,6 @@ const localStorage = (() => {
         }
     };
 })();
-
-// === LOG CAPTURE & DIAGNOSTICS CODE ===
-const originalConsoleLog = console.log;
-const originalConsoleWarn = console.warn;
-const originalConsoleError = console.error;
-
-window.diagnosticsEnabled = true; // Temporarily force-enable diagnostics for troubleshooting
-
-window.appLogs = [];
-try {
-    if (window.diagnosticsEnabled) {
-        const savedLogsString = localStorage.getItem('appLogs_persistent');
-        if (savedLogsString) {
-            window.appLogs = JSON.parse(savedLogsString);
-            window.appLogs.push(`[${new Date().toISOString().split('T')[1].slice(0, 11)}] [SYSTEM] --- APPLICATION RESTARTED (PREVIOUS LOGS PRESERVED) ---`);
-            if (window.appLogs.length > 500) {
-                window.appLogs.shift();
-            }
-        }
-    }
-} catch (e) {
-    window.appLogs = [];
-}
-
-function captureLog(type, args) {
-    if (!window.diagnosticsEnabled) {
-        return;
-    }
-    const timeStr = new Date().toISOString().split('T')[1].slice(0, 11);
-    const message = args.map(arg => {
-        if (typeof arg === 'object') {
-            try { return JSON.stringify(arg); } catch (e) { return String(arg); }
-        }
-        return String(arg);
-    }).join(' ');
-    
-    window.appLogs.push(`[${timeStr}] [${type}] ${message}`);
-    if (window.appLogs.length > 500) {
-        window.appLogs.shift();
-    }
-    
-    try {
-        localStorage.setItem('appLogs_persistent', JSON.stringify(window.appLogs));
-    } catch (e) {}
-    
-    const debugPre = document.getElementById('debug-log-output');
-    if (debugPre) {
-        debugPre.textContent = window.appLogs.join('\n');
-        // Auto scroll to bottom
-        debugPre.scrollTop = debugPre.scrollHeight;
-    }
-}
-
-console.log = function(...args) {
-    originalConsoleLog.apply(console, args);
-    captureLog('LOG', args);
-};
-console.warn = function(...args) {
-    originalConsoleWarn.apply(console, args);
-    captureLog('WARN', args);
-};
-console.error = function(...args) {
-    originalConsoleError.apply(console, args);
-    captureLog('ERROR', args);
-};
-
-window.addEventListener('error', (event) => {
-    console.error(`[UNCAUGHT_ERROR] Got uncaught exception in window: ${event.message} at ${event.filename}:${event.lineno}:${event.colno}`);
-});
-
-window.addEventListener('unhandledrejection', (event) => {
-    console.error(`[UNHANDLED_PROMISE] Got unhandled rejection: ${event.reason}`);
-});
 
 function runSystemDiagnostics() {
     console.log('--- RUNNING DIAGNOSTICS ---');
