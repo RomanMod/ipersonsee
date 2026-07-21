@@ -7,26 +7,26 @@ const originalConsoleLog = console.log;
 const originalConsoleWarn = console.warn;
 const originalConsoleError = console.error;
 
-window.diagnosticsEnabled = true; // Temporarily force-enable diagnostics for troubleshooting
+window.diagnosticsEnabled = safeGetItem('diagnostics_enabled') === 'true'; // Disabled by default, can be toggled by tapping version badge 10 times
 window.appLogs = [];
 
 // Helper for early safe localStorage access before wrapper is defined
-const safeGetItem = (key) => {
+function safeGetItem(key) {
     try {
         if (typeof window !== 'undefined' && 'localStorage' in window && window.localStorage !== null) {
             return window.localStorage.getItem(key);
         }
     } catch (e) {}
     return null;
-};
+}
 
-const safeSetItem = (key, value) => {
+function safeSetItem(key, value) {
     try {
         if (typeof window !== 'undefined' && 'localStorage' in window && window.localStorage !== null) {
             window.localStorage.setItem(key, value);
         }
     } catch (e) {}
-};
+}
 
 try {
     if (window.diagnosticsEnabled) {
@@ -34,13 +34,25 @@ try {
         if (savedLogsString) {
             window.appLogs = JSON.parse(savedLogsString);
             window.appLogs.push(`[${new Date().toISOString().split('T')[1].slice(0, 11)}] [SYSTEM] --- APPLICATION RESTARTED (PREVIOUS LOGS PRESERVED) ---`);
-            if (window.appLogs.length > 500) {
+            if (window.appLogs.length > 250) {
                 window.appLogs.shift();
             }
         }
     }
 } catch (e) {
     window.appLogs = [];
+}
+
+// Throttled storage write helper to avoid lagging the main thread
+let saveLogsTimeout = null;
+function scheduleSaveLogs() {
+    if (saveLogsTimeout) return;
+    saveLogsTimeout = setTimeout(() => {
+        saveLogsTimeout = null;
+        try {
+            safeSetItem('appLogs_persistent', JSON.stringify(window.appLogs));
+        } catch (e) {}
+    }, 3000); // Save at most once every 3 seconds
 }
 
 function captureLog(type, args) {
@@ -56,17 +68,21 @@ function captureLog(type, args) {
     }).join(' ');
     
     window.appLogs.push(`[${timeStr}] [${type}] ${message}`);
-    if (window.appLogs.length > 500) {
+    if (window.appLogs.length > 250) {
         window.appLogs.shift();
     }
     
-    safeSetItem('appLogs_persistent', JSON.stringify(window.appLogs));
+    scheduleSaveLogs();
     
-    const debugPre = document.getElementById('debug-log-output');
-    if (debugPre) {
-        debugPre.textContent = window.appLogs.join('\n');
-        // Auto scroll to bottom
-        debugPre.scrollTop = debugPre.scrollHeight;
+    // Only update DOM if the diagnostics panel is open/visible to prevent expensive layout/rendering calculations
+    const diagPanel = document.getElementById('diagnostics-panel');
+    if (diagPanel && diagPanel.style.display !== 'none') {
+        const debugPre = document.getElementById('debug-log-output');
+        if (debugPre) {
+            debugPre.textContent = window.appLogs.join('\n');
+            // Auto scroll to bottom
+            debugPre.scrollTop = debugPre.scrollHeight;
+        }
     }
 }
 
@@ -89,6 +105,14 @@ window.addEventListener('error', (event) => {
 
 window.addEventListener('unhandledrejection', (event) => {
     console.error(`[UNHANDLED_PROMISE] Got unhandled rejection: ${event.reason}`);
+});
+
+window.addEventListener('beforeunload', () => {
+    if (window.diagnosticsEnabled && window.appLogs && window.appLogs.length > 0) {
+        try {
+            safeSetItem('appLogs_persistent', JSON.stringify(window.appLogs));
+        } catch (e) {}
+    }
 });
 
 // Safe localStorage wrapper to prevent crashes in sandboxed iframe or Telegram WebView environments
