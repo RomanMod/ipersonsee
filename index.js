@@ -1,6 +1,6 @@
 // === GLOBAL APPLICATION CONFIGURATION ===
 // Change the version number here in exactly one place!
-const APP_VERSION_FALLBACK = '2.0.9';
+const APP_VERSION_FALLBACK = '2.1.0';
 
 // === LOG CAPTURE & DIAGNOSTICS CODE (MUST BE AT THE VERY TOP) ===
 const originalConsoleLog = console.log;
@@ -359,7 +359,7 @@ const languageLabels = {
     zh: '中文',
     it: 'Italiano',
     ru: 'Русский',
-    alien: '👽 ⊸⍟⊸'
+    alien: '👽 ☍Ψ☌'
 };
 
 // Переводы
@@ -773,55 +773,55 @@ const translations = {
         gotItBtn: 'Понятно!'
     },
     alien: {
-        themeNight: '🌙 ⊸⍟⊸',
-        themeDay: '☀ ⊸⍟⊸',
-        modeOpen: '⊸⍟⊸',
-        modeClosed: '⊸⍟⊸⊸',
-        nextPhoto: '⊸⍟⊸ ⊸⍟⊸',
-        nextPerson: '⊸⍟⊸ ⊸⍟⊸',
-        unknown: '⊸⍟⊸⊸⊸',
-        testPerson: '⊸⍟⊸ ⊸⍟⊸',
-        statsSuccess: '⊸⍟⊸⊸',
-        statsFailure: '⊸⍟⊸⊸⊸',
-        statsSuccessRate: '⊸⍟⊸⊸⊸⊸',
-        checkBtn: '⊸⍟⊸',
-        male: '⊸⍟⊸',
-        female: '⊸⍟⊸⊸',
-        alive: '⊸⍟⊸',
-        deceased: '⊸⍟⊸⊸',
-        birth: '⊸⍟⊸',
-        death: '⊸⍟⊸⊸',
-        newGame: '⊸⍟⊸ ⊸⍟⊸',
-        attempts: '⊸⍟⊸⊸',
-        error: '⊸⍟⊸⊸!',
-        guessHistory: '⊸⍀⍟ ✓/⍊:',
-        imageDisplayAlt: '⊸⍉⋉⏁ ⍜⎎ ⌿⟒⍀⌇⍜⋏', // Alien for "Image of person"
-        errorLoadingImage: '⊸⍟⊸ ⌰⍜⏃⎅ ⟒⍀⍜⍀', // Alien for "Error loading image"
-        playerNameLabel: '⌿⌰⏃⊬⟒⍀',
-        diagnosticsTitle: '📊 ⊸⍟⊸ & ⊸⍟⊸',
-        clearLogs: '⊸⍟⊸ ⊸⍟⊸',
-        runDiagnostics: '⊸⍟⊸',
-        copyLogs: '⊸⍟⊸',
-        appVersion: `⊸⍟⊸ v${APP_VERSION_FALLBACK}`,
-        correctGuess: '✓ ⊸⍟⊸',
-        incorrectGuess: '✗ ⊸⍟⊸',
-        overlayText: '⊸⍟⊸ ⊸⍟⊸⊸',
-        statsTitleHeader: '⊸⍟⊸ ⊸⍟⊸⊸⊸',
-        helpBtnText: '⊸⍟⊸',
-        helpModalTitle: '⊸⍟⊸ 📖',
-        helpGoalTitle: '⊸⍟⊸',
-        helpGoalText: '⊸⍟⊸ ⊸⍟⊸ ⊸⍟⊸ ⊸⍟⊸ ⊸⍟⊸.',
-        helpModesTitle: '⊸⍟⊸',
-        helpModeOpenTitle: '👁️ ⊸⍟⊸',
-        helpModeOpenText: '⊸⍟⊸ ⊸⍟⊸ ⊸⍟⊸.',
-        helpModeClosedTitle: '🔒 ⊸⍟⊸',
-        helpModeClosedText: '⊸⍟⊸ ⊸⍟⊸ «⊸⍟⊸»!',
-        helpButtonsTitle: '⊸⍟⊸',
-        helpBtnNextPhotoText: '🔄 <strong>⊸⍟⊸</strong> — ⊸⍟⊸ ⊸⍟⊸.',
-        helpBtnNextPersonText: '👤 <strong>⊸⍟⊸</strong> — ⊸⍟⊸.',
-        helpBtnCheckText: '✅ <strong>⊸⍟⊸</strong> — ⊸⍟⊸ ⊸⍟⊸.',
-        helpBtnGenderStatusText: '🔘 <strong>⊸⍟⊸ / ⊸⍟⊸</strong> — ⊸⍟⊸.',
-        gotItBtn: '⊸⍟⊸!'
+        themeNight: '🌙 ☌⬡☍',
+        themeDay: '☀ ☍⚡☌',
+        modeOpen: '👁️ ☍Ψ☌',
+        modeClosed: '🔒 ☌Ω☍',
+        nextPhoto: '🔄 ☌⬡ ϘϞϠ',
+        nextPerson: '👤 Ͼ☍Ͽ',
+        unknown: '⬡◇☌?',
+        testPerson: '⚡☍◈ ϘϞ',
+        statsSuccess: '⊕ ϘϞϠ',
+        statsFailure: '⊗ Ͼ☍Ͽ',
+        statsSuccessRate: '⚡ ⨀/⨁',
+        checkBtn: '✅ ☍Ψ☌',
+        male: '♂ ⬡Ψ☌',
+        female: '♀ ⬡Ω☍',
+        alive: '⚡ ϘϞϠ',
+        deceased: '✦ Ͼ☍Ͽ',
+        birth: '⨀ ☍Ψ',
+        death: '⨁ ☌Ω',
+        newGame: '🛸 ☌⬡☍',
+        attempts: '◈ ϘϞ',
+        error: '⚡ Ͼ☍Ͽ!',
+        guessHistory: '☍☌◈ ✓/Δ:',
+        imageDisplayAlt: '🛸 ⬡◈◇',
+        errorLoadingImage: '⚡ ☌ΩϾ',
+        playerNameLabel: '👽 ☍ΨϘ',
+        diagnosticsTitle: '📊 ⬡☌ & ◈☍',
+        clearLogs: '⚡ ☌Ω',
+        runDiagnostics: '⬡ ϘϞ',
+        copyLogs: '◈ Ͼ☍',
+        appVersion: `👽 ☍Ψ v${APP_VERSION_FALLBACK}`,
+        correctGuess: '✓ ϘϞϠ',
+        incorrectGuess: '✗ Ͼ☍Ͽ',
+        overlayText: '🛸 ☍ΨΩ ϘϞϠ',
+        statsTitleHeader: '📊 ☍ΨΩ ☌⬡◈',
+        helpBtnText: '👽 ☍Ψ☌',
+        helpModalTitle: '📖 🛸 ☍ΨΩ ☌⬡',
+        helpGoalTitle: '🎯 ⬡ ☍Ψ☌',
+        helpGoalText: '👽 ☌⬡ ϘϞϠ ☍ΨΩ ◈◇⬡ Ͼ☍Ͽ ⚡ ⨀/⨁.',
+        helpModesTitle: '⚙️ ☍ΨΩ ☌⬡◈',
+        helpModeOpenTitle: '👁️ ⬡ ☍Ψ☌',
+        helpModeOpenText: '🛸 ☌⬡ ϘϞϠ ☍ΨΩ ⚡ ⨀/⨁ ◈◇⬡.',
+        helpModeClosedTitle: '🔒 ☌Ω☍ ☍ΨΩ',
+        helpModeClosedText: '🛸 Ͼ☍Ͽ ☌⬡! ⬡Ψ☌ / ⬡Ω☍ ⚡ «☍Ψ☌»!',
+        helpButtonsTitle: '🕹️ ☍ΨΩ 🕹️',
+        helpBtnNextPhotoText: '🔄 <strong>☌⬡ ϘϞϠ</strong> — ⚡ ◈◇⬡ 🛸 ☍ΨΩ.',
+        helpBtnNextPersonText: '👤 <strong>Ͼ☍Ͽ</strong> — 👽 ☌⬡ ⨀/⨁.',
+        helpBtnCheckText: '✅ <strong>☍Ψ☌</strong> — 🛸 ϘϞϠ ⚡ ☌Ω☍.',
+        helpBtnGenderStatusText: '🔘 <strong>♂/♀ ⚡ ⨀/⨁</strong> — ⬡ ☍Ψ☌.',
+        gotItBtn: '👽 ☍Ψ☌!'
     }
 };
 

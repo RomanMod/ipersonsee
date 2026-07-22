@@ -89,6 +89,79 @@ body.day .options li {
     color: #1C1C1E !important;
 }
 
+/* Day Theme - Image Frame, Closed Mode Overlay, and Vignette Adaptations */
+body.day #main-display {
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.12) 0%, rgba(188, 19, 254, 0.12) 100%), #FFFFFF !important;
+    box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.1), 0 4px 12px -2px rgba(0, 0, 0, 0.05) !important;
+}
+
+body.day #main-display .bg-void-black {
+    background-color: #F1F5F9 !important;
+    border-color: #CBD5E1 !important;
+}
+
+body.day #overlay {
+    background-color: rgba(241, 245, 249, 0.96) !important;
+    backdrop-filter: blur(8px) !important;
+}
+
+body.day #overlay .material-symbols-outlined {
+    color: #8B5CF6 !important;
+    filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.3));
+}
+
+body.day #overlay-text {
+    color: #1E293B !important;
+    font-weight: 700 !important;
+}
+
+body.day #main-display .bg-gradient-to-t {
+    background: linear-gradient(to top, rgba(203, 213, 225, 0.4), transparent) !important;
+}
+
+/* Day Theme Modals Adaptation (Help modal & Diagnostics) */
+body.day #help-modal {
+    background-color: rgba(15, 23, 42, 0.4) !important;
+    backdrop-filter: blur(12px) !important;
+}
+
+body.day #help-modal .bg-surface-container-low {
+    background-color: #FFFFFF !important;
+    border-color: #CBD5E1 !important;
+    box-shadow: 0 20px 40px -15px rgba(0,0,0,0.15) !important;
+}
+
+body.day #help-modal .bg-void-black\/40,
+body.day #help-modal .bg-surface-container\/50 {
+    background-color: #F8FAFC !important;
+    border-color: #E2E8F0 !important;
+}
+
+body.day #help-modal .text-on-surface-variant {
+    color: #334155 !important;
+}
+
+body.day #help-modal .text-neon-cyan {
+    color: #0284C7 !important;
+}
+
+body.day #help-modal .border-neon-cyan\/30,
+body.day #help-modal .border-neon-cyan\/40 {
+    border-color: rgba(2, 132, 199, 0.4) !important;
+}
+
+body.day #got-it-help-btn {
+    background-color: rgba(2, 132, 199, 0.1) !important;
+    color: #0284C7 !important;
+    border-color: rgba(2, 132, 199, 0.3) !important;
+}
+
+body.day #debug-log-output {
+    background-color: #F1F5F9 !important;
+    color: #0F172A !important;
+    border-color: #CBD5E1 !important;
+}
+
 /* Ritual Frame styling */
 .ritual-frame {
     position: relative;
