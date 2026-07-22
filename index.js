@@ -1,6 +1,6 @@
 // === GLOBAL APPLICATION CONFIGURATION ===
 // Change the version number here in exactly one place!
-const APP_VERSION_FALLBACK = '2.0.8';
+const APP_VERSION_FALLBACK = '2.0.9';
 
 // === LOG CAPTURE & DIAGNOSTICS CODE (MUST BE AT THE VERY TOP) ===
 const originalConsoleLog = console.log;
@@ -350,6 +350,18 @@ let isCurrentlyPreloading = false; // Флаг для предотвращени
 let buttonVisibilityTimeoutId = null;
 
 
+const languageLabels = {
+    uk: 'Українська',
+    en: 'English',
+    de: 'Deutsch',
+    fr: 'Français',
+    es: 'Español',
+    zh: '中文',
+    it: 'Italiano',
+    ru: 'Русский',
+    alien: '👽 ⊸⍟⊸'
+};
+
 // Переводы
 const translations = {
     uk: {
@@ -384,41 +396,24 @@ const translations = {
         copyLogs: 'Копіювати логи',
         appVersion: `Версія v${APP_VERSION_FALLBACK}`,
         correctGuess: 'ВІРНО',
-        incorrectGuess: 'НЕВІРНО'
-    },
-    ru: {
-        themeNight: '🌙 Ночь',
-        themeDay: '☀ День',
-        modeOpen: 'Открытый',
-        modeClosed: 'Закрытый',
-        nextPhoto: 'Найти новое фото',
-        nextPerson: 'Следующее фото',
-        unknown: 'Неизвестно',
-        testPerson: 'Тестовый персонаж',
-        statsSuccess: 'Успешные',
-        statsFailure: 'Неуспешные',
-        statsSuccessRate: 'Процент успешных',
-        checkBtn: 'Проверить',
-        male: 'Мужчина',
-        female: 'Женщина',
-        alive: 'Жив',
-        deceased: 'Мертв',
-        birth: 'Рождение',
-        death: 'Смерть',
-        newGame: 'Новая игра',
-        attempts: 'Попытки',
-        error: 'Ошибка',
-        guessHistory: 'История успех/время:',
-        imageDisplayAlt: 'Изображение человека',
-        errorLoadingImage: 'Ошибка загрузки изображения',
-        playerNameLabel: 'Игрок',
-        diagnosticsTitle: '📊 Диагностика & Логи',
-        clearLogs: 'Очистить логи',
-        runDiagnostics: 'Запустить диагностику',
-        copyLogs: 'Копировать логи',
-        appVersion: `Версия v${APP_VERSION_FALLBACK}`,
-        correctGuess: 'ВЕРНО',
-        incorrectGuess: 'НЕВЕРНО'
+        incorrectGuess: 'НЕВІРНО',
+        overlayText: 'Протокол Порожнечі',
+        statsTitleHeader: 'Духовна статистика',
+        helpBtnText: 'Довідка',
+        helpModalTitle: 'Як грати 📖',
+        helpGoalTitle: 'Мета гри',
+        helpGoalText: 'Вгадати стать людини та стан (живий чи померлий) за наданими фотографіями та підказками.',
+        helpModesTitle: 'Режими гри',
+        helpModeOpenTitle: '👁️ Відкритий режим',
+        helpModeOpenText: 'Фото людини видно одразу. Переглядайте додаткові фото та вивчайте інформацію.',
+        helpModeClosedTitle: '🔒 Закритий режим',
+        helpModeClosedText: 'Фото приховано за екраном. Спочатку зробіть вибір (Стать і Статус), потім натисніть «Перевірити»!',
+        helpButtonsTitle: 'Кнопки та керування',
+        helpBtnNextPhotoText: '🔄 <strong>Знайти нове фото</strong> — завантажити інше фото тієї ж людини.',
+        helpBtnNextPersonText: '👤 <strong>Наступне фото</strong> — перейти до іншої випадкової людини.',
+        helpBtnCheckText: '✅ <strong>Перевірити</strong> — відкрити фото та дізнатися результат (у Закритому режимі).',
+        helpBtnGenderStatusText: '🔘 <strong>Чоловік / Жінка / Живий / Померлий</strong> — варіанти відповідей.',
+        gotItBtn: 'Зрозуміло!'
     },
     en: {
         themeNight: '🌙 Night',
@@ -452,7 +447,330 @@ const translations = {
         copyLogs: 'Copy Logs',
         appVersion: `Version v${APP_VERSION_FALLBACK}`,
         correctGuess: 'CORRECT',
-        incorrectGuess: 'INCORRECT'
+        incorrectGuess: 'INCORRECT',
+        overlayText: 'Void Protocol',
+        statsTitleHeader: 'Spiritual Stats',
+        helpBtnText: 'Help',
+        helpModalTitle: 'How to Play 📖',
+        helpGoalTitle: 'Goal of the Game',
+        helpGoalText: 'Guess the person’s gender and status (alive or deceased) using photos and details.',
+        helpModesTitle: 'Game Modes',
+        helpModeOpenTitle: '👁️ Open Mode',
+        helpModeOpenText: 'The photo is visible immediately. Browse photos and view details.',
+        helpModeClosedTitle: '🔒 Closed Mode',
+        helpModeClosedText: 'Photo is hidden. Select Gender and Status, then tap "Check"!',
+        helpButtonsTitle: 'Buttons & Controls',
+        helpBtnNextPhotoText: '🔄 <strong>Find New Photo</strong> — load another photo of the same person.',
+        helpBtnNextPersonText: '👤 <strong>Next Photo</strong> — move on to a new random person.',
+        helpBtnCheckText: '✅ <strong>Check</strong> — reveal the photo and see your result (in Closed Mode).',
+        helpBtnGenderStatusText: '🔘 <strong>Male / Female / Alive / Deceased</strong> — select your answers.',
+        gotItBtn: 'Got it!'
+    },
+    de: {
+        themeNight: '🌙 Nacht',
+        themeDay: '☀ Tag',
+        modeOpen: 'Offen',
+        modeClosed: 'Geschlossen',
+        nextPhoto: 'Neues Foto suchen',
+        nextPerson: 'Nächstes Foto',
+        unknown: 'Unbekannt',
+        testPerson: 'Testperson',
+        statsSuccess: 'Erfolgreich',
+        statsFailure: 'Erfolglos',
+        statsSuccessRate: 'Erfolgsquote',
+        checkBtn: 'Prüfen',
+        male: 'Mann',
+        female: 'Frau',
+        alive: 'Lebendig',
+        deceased: 'Verstorben',
+        birth: 'Geburt',
+        death: 'Tod',
+        newGame: 'Neues Spiel',
+        attempts: 'Versuche',
+        error: 'Fehler',
+        guessHistory: 'Verlauf Erfolg/Zeit:',
+        imageDisplayAlt: 'Bild einer Person',
+        errorLoadingImage: 'Fehler beim Laden des Bildes',
+        playerNameLabel: 'Spieler',
+        diagnosticsTitle: '📊 Diagnose & Protokolle',
+        clearLogs: 'Protokolle löschen',
+        runDiagnostics: 'Diagnose ausführen',
+        copyLogs: 'Protokolle kopieren',
+        appVersion: `Version v${APP_VERSION_FALLBACK}`,
+        correctGuess: 'RICHTIG',
+        incorrectGuess: 'FALSCH',
+        overlayText: 'Leere-Protokoll',
+        statsTitleHeader: 'Geistige Statistik',
+        helpBtnText: 'Hilfe',
+        helpModalTitle: 'Spielanleitung 📖',
+        helpGoalTitle: 'Ziel des Spiels',
+        helpGoalText: 'Errate Geschlecht und Status (lebend oder verstorben) anhand der Fotos.',
+        helpModesTitle: 'Spielmodi',
+        helpModeOpenTitle: '👁️ Offener Modus',
+        helpModeOpenText: 'Das Foto ist sofort sichtbar. Durchsuche Fotos und Details.',
+        helpModeClosedTitle: '🔒 Geschlossener Modus',
+        helpModeClosedText: 'Foto ist verdeckt. Wähle Geschlecht & Status, dann klicke auf "Prüfen"!',
+        helpButtonsTitle: 'Steuerung & Tasten',
+        helpBtnNextPhotoText: '🔄 <strong>Neues Foto suchen</strong> — anderes Foto derselben Person laden.',
+        helpBtnNextPersonText: '👤 <strong>Nächstes Foto</strong> — zu einer neuen zufälligen Person wechseln.',
+        helpBtnCheckText: '✅ <strong>Prüfen</strong> — Foto aufdecken und Ergebnis sehen.',
+        helpBtnGenderStatusText: '🔘 <strong>Mann / Frau / Lebendig / Verstorben</strong> — deine Auswahl.',
+        gotItBtn: 'Verstanden!'
+    },
+    fr: {
+        themeNight: '🌙 Nuit',
+        themeDay: '☀ Jour',
+        modeOpen: 'Ouvert',
+        modeClosed: 'Fermé',
+        nextPhoto: 'Trouver une nouvelle photo',
+        nextPerson: 'Photo suivante',
+        unknown: 'Inconnu',
+        testPerson: 'Personne de test',
+        statsSuccess: 'Réussis',
+        statsFailure: 'Échecs',
+        statsSuccessRate: 'Taux de réussite',
+        checkBtn: 'Vérifier',
+        male: 'Homme',
+        female: 'Femme',
+        alive: 'Vivant',
+        deceased: 'Décédé',
+        birth: 'Naissance',
+        death: 'Décès',
+        newGame: 'Nouvelle partie',
+        attempts: 'Essais',
+        error: 'Erreur',
+        guessHistory: 'Historique succès/temps :',
+        imageDisplayAlt: 'Image d’une personne',
+        errorLoadingImage: 'Erreur de chargement de l’image',
+        playerNameLabel: 'Joueur',
+        diagnosticsTitle: '📊 Diagnostic & Journaux',
+        clearLogs: 'Effacer les journaux',
+        runDiagnostics: 'Lancer le diagnostic',
+        copyLogs: 'Copier les journaux',
+        appVersion: `Version v${APP_VERSION_FALLBACK}`,
+        correctGuess: 'CORRECT',
+        incorrectGuess: 'INCORRECT',
+        overlayText: 'Protocole du Vide',
+        statsTitleHeader: 'Statistiques Spirituelles',
+        helpBtnText: 'Aide',
+        helpModalTitle: 'Comment jouer 📖',
+        helpGoalTitle: 'But du jeu',
+        helpGoalText: 'Devinez le genre et le statut (vivant ou décédé) grâce aux photos.',
+        helpModesTitle: 'Modes de jeu',
+        helpModeOpenTitle: '👁️ Mode Ouvert',
+        helpModeOpenText: 'La photo est visible immédiatement. Parcourez les photos et infos.',
+        helpModeClosedTitle: '🔒 Mode Fermé',
+        helpModeClosedText: 'La photo est masquée. Choisissez Genre & Statut, puis appuyez sur « Vérifier » !',
+        helpButtonsTitle: 'Commandes & Boutons',
+        helpBtnNextPhotoText: '🔄 <strong>Trouver une nouvelle photo</strong> — charger une autre photo de la personne.',
+        helpBtnNextPersonText: '👤 <strong>Photo suivante</strong> — passer à une personne aléatoire.',
+        helpBtnCheckText: '✅ <strong>Vérifier</strong> — révéler la photo et voir le résultat.',
+        helpBtnGenderStatusText: '🔘 <strong>Homme / Femme / Vivant / Décédé</strong> — vos choix.',
+        gotItBtn: 'Compris !'
+    },
+    es: {
+        themeNight: '🌙 Noche',
+        themeDay: '☀ Día',
+        modeOpen: 'Abierto',
+        modeClosed: 'Cerrado',
+        nextPhoto: 'Buscar nueva foto',
+        nextPerson: 'Siguiente foto',
+        unknown: 'Desconocido',
+        testPerson: 'Persona de prueba',
+        statsSuccess: 'Exitosos',
+        statsFailure: 'Fallidos',
+        statsSuccessRate: 'Tasa de éxito',
+        checkBtn: 'Comprobar',
+        male: 'Hombre',
+        female: 'Mujer',
+        alive: 'Vivo',
+        deceased: 'Fallecido',
+        birth: 'Nacimiento',
+        death: 'Muerte',
+        newGame: 'Nueva partida',
+        attempts: 'Intentos',
+        error: 'Error',
+        guessHistory: 'Historial éxito/tiempo:',
+        imageDisplayAlt: 'Imagen de persona',
+        errorLoadingImage: 'Error al cargar la imagen',
+        playerNameLabel: 'Jugador',
+        diagnosticsTitle: '📊 Diagnóstico y Registros',
+        clearLogs: 'Borrar registros',
+        runDiagnostics: 'Ejecutar diagnóstico',
+        copyLogs: 'Copiar registros',
+        appVersion: `Versión v${APP_VERSION_FALLBACK}`,
+        correctGuess: 'CORRECTO',
+        incorrectGuess: 'INCORRECTO',
+        overlayText: 'Protocolo del Vacío',
+        statsTitleHeader: 'Estadísticas Espirituales',
+        helpBtnText: 'Ayuda',
+        helpModalTitle: 'Cómo jugar 📖',
+        helpGoalTitle: 'Objetivo del juego',
+        helpGoalText: 'Adivina el género y el estado (vivo o fallecido) mediante las fotos.',
+        helpModesTitle: 'Modos de juego',
+        helpModeOpenTitle: '👁️ Modo Abierto',
+        helpModeOpenText: 'La foto se ve de inmediato. Explora más fotos e información.',
+        helpModeClosedTitle: '🔒 Modo Cerrado',
+        helpModeClosedText: 'La foto está oculta. ¡Elige Género y Estado, luego pulsa "Comprobar"!',
+        helpButtonsTitle: 'Botones y Controles',
+        helpBtnNextPhotoText: '🔄 <strong>Buscar nueva foto</strong> — cargar otra foto de la misma persona.',
+        helpBtnNextPersonText: '👤 <strong>Siguiente foto</strong> — pasar a otra persona aleatoria.',
+        helpBtnCheckText: '✅ <strong>Comprobar</strong> — revelar la foto y ver el resultado.',
+        helpBtnGenderStatusText: '🔘 <strong>Hombre / Mujer / Vivo / Fallecido</strong> — tus respuestas.',
+        gotItBtn: '¡Entendido!'
+    },
+    zh: {
+        themeNight: '🌙 夜间',
+        themeDay: '☀ 日间',
+        modeOpen: '公开',
+        modeClosed: '封闭',
+        nextPhoto: '寻找新照片',
+        nextPerson: '下一张照片',
+        unknown: '未知',
+        testPerson: '测试人物',
+        statsSuccess: '成功',
+        statsFailure: '失败',
+        statsSuccessRate: '成功率',
+        checkBtn: '验证',
+        male: '男性',
+        female: '女性',
+        alive: '健在',
+        deceased: '已故',
+        birth: '出生',
+        death: '逝世',
+        newGame: '新游戏',
+        attempts: '尝试次数',
+        error: '错误',
+        guessHistory: '历史 成功/时间:',
+        imageDisplayAlt: '人物照片',
+        errorLoadingImage: '图片加载失败',
+        playerNameLabel: '玩家',
+        diagnosticsTitle: '📊 诊断与日志',
+        clearLogs: '清除日志',
+        runDiagnostics: '运行诊断',
+        copyLogs: '复制日志',
+        appVersion: `版本 v${APP_VERSION_FALLBACK}`,
+        correctGuess: '正确',
+        incorrectGuess: '错误',
+        overlayText: '虚无协议',
+        statsTitleHeader: '精神统计',
+        helpBtnText: '帮助',
+        helpModalTitle: '游戏指南 📖',
+        helpGoalTitle: '游戏目标',
+        helpGoalText: '根据照片与提示，猜猜人物的性别以及状态（健在或已故）。',
+        helpModesTitle: '游戏模式',
+        helpModeOpenTitle: '👁️ 公开模式',
+        helpModeOpenText: '人物照片直接显示，可浏览更多照片和资料。',
+        helpModeClosedTitle: '🔒 封闭模式',
+        helpModeClosedText: '照片被遮挡。请先选择性别和状态，然后点击“验证”！',
+        helpButtonsTitle: '按键与操作',
+        helpBtnNextPhotoText: '🔄 <strong>寻找新照片</strong> — 加载同一人物的其他照片。',
+        helpBtnNextPersonText: '👤 <strong>下一张照片</strong> — 切换到下一位随机人物。',
+        helpBtnCheckText: '✅ <strong>验证</strong> — 揭开照片并查看结果。',
+        helpBtnGenderStatusText: '🔘 <strong>男性 / 女性 / 健在 / 已故</strong> — 猜想选项。',
+        gotItBtn: '明白了！'
+    },
+    it: {
+        themeNight: '🌙 Notte',
+        themeDay: '☀ Giorno',
+        modeOpen: 'Aperto',
+        modeClosed: 'Chiuso',
+        nextPhoto: 'Cerca nuova foto',
+        nextPerson: 'Prossima foto',
+        unknown: 'Sconosciuto',
+        testPerson: 'Persona di test',
+        statsSuccess: 'Riusciti',
+        statsFailure: 'Falliti',
+        statsSuccessRate: 'Tasso di successo',
+        checkBtn: 'Verifica',
+        male: 'Uomo',
+        female: 'Donna',
+        alive: 'Vivente',
+        deceased: 'Deceduto',
+        birth: 'Nascita',
+        death: 'Morte',
+        newGame: 'Nuova partida',
+        attempts: 'Tentativi',
+        error: 'Errore',
+        guessHistory: 'Cronologia successo/tempo:',
+        imageDisplayAlt: 'Immagine della persona',
+        errorLoadingImage: 'Errore nel caricamento dell’immagine',
+        playerNameLabel: 'Giocatore',
+        diagnosticsTitle: '📊 Diagnostica e Log',
+        clearLogs: 'Cancella log',
+        runDiagnostics: 'Esegui diagnostica',
+        copyLogs: 'Copia log',
+        appVersion: `Versione v${APP_VERSION_FALLBACK}`,
+        correctGuess: 'CORRETTO',
+        incorrectGuess: 'ERRATO',
+        overlayText: 'Protocollo del Vuoto',
+        statsTitleHeader: 'Statistiche Spirituali',
+        helpBtnText: 'Guida',
+        helpModalTitle: 'Come giocare 📖',
+        helpGoalTitle: 'Obiettivo del gioco',
+        helpGoalText: 'Indovina il genere e lo stato (vivente o deceduto) tramite le foto.',
+        helpModesTitle: 'Modalità di gioco',
+        helpModeOpenTitle: '👁️ Modalità Aperta',
+        helpModeOpenText: 'La foto è visibile subito. Sfoglia le foto e le informazioni.',
+        helpModeClosedTitle: '🔒 Modalità Chiusa',
+        helpModeClosedText: 'La foto è nascosta. Scegli Genere e Stato, poi premi "Verifica"!',
+        helpButtonsTitle: 'Pulsanti e Comandi',
+        helpBtnNextPhotoText: '🔄 <strong>Cerca nuova foto</strong> — carica un’altra foto della persona.',
+        helpBtnNextPersonText: '👤 <strong>Prossima foto</strong> — passa a una nuova persona casuale.',
+        helpBtnCheckText: '✅ <strong>Verifica</strong> — svela la foto e scopri il risultato.',
+        helpBtnGenderStatusText: '🔘 <strong>Uomo / Donna / Vivente / Deceduto</strong> — le tue opzioni.',
+        gotItBtn: 'Capito!'
+    },
+    ru: {
+        themeNight: '🌙 Ночь',
+        themeDay: '☀ День',
+        modeOpen: 'Открытый',
+        modeClosed: 'Закрытый',
+        nextPhoto: 'Найти новое фото',
+        nextPerson: 'Следующее фото',
+        unknown: 'Неизвестно',
+        testPerson: 'Тестовый персонаж',
+        statsSuccess: 'Успешные',
+        statsFailure: 'Неуспешные',
+        statsSuccessRate: 'Процент успешных',
+        checkBtn: 'Проверить',
+        male: 'Мужчина',
+        female: 'Женщина',
+        alive: 'Жив',
+        deceased: 'Мертв',
+        birth: 'Рождение',
+        death: 'Смерть',
+        newGame: 'Новая игра',
+        attempts: 'Попытки',
+        error: 'Ошибка',
+        guessHistory: 'История успех/время:',
+        imageDisplayAlt: 'Изображение человека',
+        errorLoadingImage: 'Ошибка загрузки изображения',
+        playerNameLabel: 'Игрок',
+        diagnosticsTitle: '📊 Диагностика & Логи',
+        clearLogs: 'Очистить логи',
+        runDiagnostics: 'Запустить диагностику',
+        copyLogs: 'Копировать логи',
+        appVersion: `Версия v${APP_VERSION_FALLBACK}`,
+        correctGuess: 'ВЕРНО',
+        incorrectGuess: 'НЕВЕРНО',
+        overlayText: 'Протокол Пустоты',
+        statsTitleHeader: 'Духовная статистика',
+        helpBtnText: 'Справка',
+        helpModalTitle: 'Как играть 📖',
+        helpGoalTitle: 'Цель игры',
+        helpGoalText: 'Угадать пол человека и его статус (живой или умерший) по фотографиям и подсказкам.',
+        helpModesTitle: 'Режимы игры',
+        helpModeOpenTitle: '👁️ Открытый режим',
+        helpModeOpenText: 'Фото человека видно сразу. Просматривайте доп. фото и изучайте информацию.',
+        helpModeClosedTitle: '🔒 Закрытый режим',
+        helpModeClosedText: 'Фото скрыто за экраном. Сначала сделайте выбор (Пол и Статус), затем нажмите «Проверить»!',
+        helpButtonsTitle: 'Кнопки и управление',
+        helpBtnNextPhotoText: '🔄 <strong>Найти новое фото</strong> — загрузить другое фото того же человека.',
+        helpBtnNextPersonText: '👤 <strong>Следующее фото</strong> — перейти к другому случайному человеку.',
+        helpBtnCheckText: '✅ <strong>Проверить</strong> — открыть фото и узнать результат (в Закрытом режиме).',
+        helpBtnGenderStatusText: '🔘 <strong>Мужчина / Женщина / Жив / Мертв</strong> — варианты ответа.',
+        gotItBtn: 'Понятно!'
     },
     alien: {
         themeNight: '🌙 ⊸⍟⊸',
@@ -486,7 +804,24 @@ const translations = {
         copyLogs: '⊸⍟⊸',
         appVersion: `⊸⍟⊸ v${APP_VERSION_FALLBACK}`,
         correctGuess: '✓ ⊸⍟⊸',
-        incorrectGuess: '✗ ⊸⍟⊸'
+        incorrectGuess: '✗ ⊸⍟⊸',
+        overlayText: '⊸⍟⊸ ⊸⍟⊸⊸',
+        statsTitleHeader: '⊸⍟⊸ ⊸⍟⊸⊸⊸',
+        helpBtnText: '⊸⍟⊸',
+        helpModalTitle: '⊸⍟⊸ 📖',
+        helpGoalTitle: '⊸⍟⊸',
+        helpGoalText: '⊸⍟⊸ ⊸⍟⊸ ⊸⍟⊸ ⊸⍟⊸ ⊸⍟⊸.',
+        helpModesTitle: '⊸⍟⊸',
+        helpModeOpenTitle: '👁️ ⊸⍟⊸',
+        helpModeOpenText: '⊸⍟⊸ ⊸⍟⊸ ⊸⍟⊸.',
+        helpModeClosedTitle: '🔒 ⊸⍟⊸',
+        helpModeClosedText: '⊸⍟⊸ ⊸⍟⊸ «⊸⍟⊸»!',
+        helpButtonsTitle: '⊸⍟⊸',
+        helpBtnNextPhotoText: '🔄 <strong>⊸⍟⊸</strong> — ⊸⍟⊸ ⊸⍟⊸.',
+        helpBtnNextPersonText: '👤 <strong>⊸⍟⊸</strong> — ⊸⍟⊸.',
+        helpBtnCheckText: '✅ <strong>⊸⍟⊸</strong> — ⊸⍟⊸ ⊸⍟⊸.',
+        helpBtnGenderStatusText: '🔘 <strong>⊸⍟⊸ / ⊸⍟⊸</strong> — ⊸⍟⊸.',
+        gotItBtn: '⊸⍟⊸!'
     }
 };
 
@@ -540,7 +875,7 @@ if (document.body) {
 }
 const languageSelectBtn = document.querySelector('#language-select .selected-option');
 if (languageSelectBtn) {
-    languageSelectBtn.textContent = selectedLanguage === 'uk' ? 'Українська' : selectedLanguage === 'ru' ? 'Русский' : selectedLanguage === 'en' ? 'English' : '👽 ⊸⍟⊸';
+    languageSelectBtn.textContent = languageLabels[selectedLanguage] || 'Українська';
 }
 const modeToggleBtnInit = document.getElementById('mode-toggle');
 if (modeToggleBtnInit) {
@@ -630,23 +965,29 @@ function updateGuessHistoryDisplay() {
     historyContainer.innerHTML = '';
 
     if (guessResultsHistory.length === 0) {
-        let emptyLabel = 'Немає історії спроб';
-        if (selectedLanguage === 'en') {
-            emptyLabel = 'No attempts history';
-        } else if (selectedLanguage === 'ru') {
-            emptyLabel = 'Нет истории попыток';
-        } else if (selectedLanguage === 'alien') {
-            emptyLabel = '⊸⍟⊸ ⊸⍟⊸ ⊸⍟⊸';
-        }
+        const emptyLabels = {
+            uk: 'Немає історії спроб',
+            ru: 'Нет истории попыток',
+            en: 'No attempts history',
+            de: 'Keine Versuchshistorie',
+            fr: 'Aucun historique d’essais',
+            es: 'Sin historial de intentos',
+            zh: '无尝试历史',
+            it: 'Nessuna cronologia tentativi',
+            alien: '⊸⍟⊸ ⊸⍟⊸ ⊸⍟⊸'
+        };
+        let emptyLabel = emptyLabels[selectedLanguage] || emptyLabels.en;
         historyContainer.innerHTML = `<span class="font-mono text-xs text-on-surface-variant/40 tracking-wider">${emptyLabel}</span>`;
         return;
     }
 
-    let durationSuffix = 'с'; 
-    if (selectedLanguage === 'en') {
-        durationSuffix = 's';
+    let durationSuffix = 's'; 
+    if (selectedLanguage === 'uk' || selectedLanguage === 'ru') {
+        durationSuffix = 'с';
     } else if (selectedLanguage === 'alien') {
         durationSuffix = '⍊';
+    } else if (selectedLanguage === 'zh') {
+        durationSuffix = '秒';
     }
 
     guessResultsHistory.forEach((result, index) => {
@@ -721,7 +1062,24 @@ function updateLanguage() {
     document.getElementById('female-btn').textContent = texts.female;
     document.getElementById('alive-btn').textContent = texts.alive;
     document.getElementById('dead-btn').textContent = texts.deceased;
-    document.title = selectedLanguage === 'uk' ? 'Гра: Випадкова людина з Wikidata' : selectedLanguage === 'ru' ? 'Игра: Случайный человек из Wikidata' : 'Game: Random Person from Wikidata';
+    
+    const overlayText = document.getElementById('overlay-text');
+    if (overlayText) overlayText.textContent = texts.overlayText || 'Void Protocol';
+    const statsTitleHeader = document.getElementById('stats-title-header');
+    if (statsTitleHeader) statsTitleHeader.textContent = texts.statsTitleHeader || 'Spiritual Stats';
+
+    const documentTitles = {
+        uk: 'Гра: Випадкова людина з Wikidata',
+        ru: 'Игра: Случайный человек из Wikidata',
+        en: 'Game: Random Person from Wikidata',
+        de: 'Spiel: Zufällige Person aus Wikidata',
+        fr: 'Jeu : Personne aléatoire de Wikidata',
+        es: 'Juego: Persona aleatoria de Wikidata',
+        zh: '游戏：来自维基数据的随机人物',
+        it: 'Gioco: Persona casuale da Wikidata',
+        alien: '⊸⍟⊸: Wikidata'
+    };
+    document.title = documentTitles[selectedLanguage] || documentTitles.en;
 
     // Translate diagnostics elements safely
     const diagSummary = document.getElementById('diag-summary-label');
@@ -732,22 +1090,71 @@ function updateLanguage() {
     if (runDiagnosticsBtn) runDiagnosticsBtn.textContent = texts.runDiagnostics || 'Запустити діагностику';
     const copyLogsBtn = document.getElementById('copy-logs-btn');
     if (copyLogsBtn) copyLogsBtn.textContent = texts.copyLogs || 'Копіювати логи';
+
+    const forceReloadTexts = {
+        uk: 'Оновити кеш 🔄',
+        ru: 'Обновить кэш 🔄',
+        en: 'Force Reload 🔄',
+        de: 'Cache aktualisieren 🔄',
+        fr: 'Forcer la recharge 🔄',
+        es: 'Forzar recarga 🔄',
+        zh: '强制刷新 🔄',
+        it: 'Ricarica forzata 🔄',
+        alien: '⊸⍟⊸ 🔄'
+    };
     const forceReloadBtn = document.getElementById('force-reload-btn');
-    if (forceReloadBtn) forceReloadBtn.textContent = selectedLanguage === 'uk' ? 'Оновити кеш 🔄' : selectedLanguage === 'ru' ? 'Обновить кэш 🔄' : 'Force Reload 🔄';
+    if (forceReloadBtn) forceReloadBtn.textContent = forceReloadTexts[selectedLanguage] || forceReloadTexts.en;
 
     // Translate version badge dynamically using APP_VERSION_FALLBACK
+    const versionPrefixes = {
+        uk: 'Версія v',
+        ru: 'Версия v',
+        en: 'Version v',
+        de: 'Version v',
+        fr: 'Version v',
+        es: 'Versión v',
+        zh: '版本 v',
+        it: 'Versione v',
+        alien: '⊸⍟⊸ v'
+    };
     const versionBadge = document.getElementById('app-version-badge');
     if (versionBadge) {
         let currentVersion = APP_VERSION_FALLBACK;
-        
-        let prefix = 'v';
-        if (selectedLanguage === 'uk') prefix = 'Версія v';
-        else if (selectedLanguage === 'ru') prefix = 'Версия v';
-        else if (selectedLanguage === 'en') prefix = 'Version v';
-        else if (selectedLanguage === 'alien') prefix = '⊸⍟⊸ v';
-        
+        let prefix = versionPrefixes[selectedLanguage] || 'Version v';
         versionBadge.textContent = `${prefix}${currentVersion}`;
     }
+
+    // Help button and Help Modal translation updates
+    const helpBtnTextEl = document.getElementById('help-btn-text');
+    if (helpBtnTextEl) helpBtnTextEl.textContent = texts.helpBtnText || 'Довідка';
+    const helpModalTitleEl = document.getElementById('help-modal-title');
+    if (helpModalTitleEl) helpModalTitleEl.textContent = texts.helpModalTitle || 'Як грати 📖';
+    const helpGoalTitleEl = document.getElementById('help-goal-title');
+    if (helpGoalTitleEl) helpGoalTitleEl.innerHTML = `<span class="material-symbols-outlined text-sm">target</span> ${texts.helpGoalTitle || 'Мета гри'}`;
+    const helpGoalTextEl = document.getElementById('help-goal-text');
+    if (helpGoalTextEl) helpGoalTextEl.textContent = texts.helpGoalText || '';
+    const helpModesTitleEl = document.getElementById('help-modes-title');
+    if (helpModesTitleEl) helpModesTitleEl.innerHTML = `<span class="material-symbols-outlined text-sm">tune</span> ${texts.helpModesTitle || 'Режими гри'}`;
+    const helpModeOpenTitleEl = document.getElementById('help-mode-open-title');
+    if (helpModeOpenTitleEl) helpModeOpenTitleEl.textContent = texts.helpModeOpenTitle || '👁️ Відкритий режим';
+    const helpModeOpenTextEl = document.getElementById('help-mode-open-text');
+    if (helpModeOpenTextEl) helpModeOpenTextEl.textContent = texts.helpModeOpenText || '';
+    const helpModeClosedTitleEl = document.getElementById('help-mode-closed-title');
+    if (helpModeClosedTitleEl) helpModeClosedTitleEl.textContent = texts.helpModeClosedTitle || '🔒 Закритий режим';
+    const helpModeClosedTextEl = document.getElementById('help-mode-closed-text');
+    if (helpModeClosedTextEl) helpModeClosedTextEl.textContent = texts.helpModeClosedText || '';
+    const helpButtonsTitleEl = document.getElementById('help-buttons-title');
+    if (helpButtonsTitleEl) helpButtonsTitleEl.innerHTML = `<span class="material-symbols-outlined text-sm">touch_app</span> ${texts.helpButtonsTitle || 'Кнопки та керування'}`;
+    const helpBtnNextPhotoEl = document.getElementById('help-btn-next-photo');
+    if (helpBtnNextPhotoEl) helpBtnNextPhotoEl.innerHTML = texts.helpBtnNextPhotoText || '';
+    const helpBtnNextPersonEl = document.getElementById('help-btn-next-person');
+    if (helpBtnNextPersonEl) helpBtnNextPersonEl.innerHTML = texts.helpBtnNextPersonText || '';
+    const helpBtnCheckEl = document.getElementById('help-btn-check');
+    if (helpBtnCheckEl) helpBtnCheckEl.innerHTML = texts.helpBtnCheckText || '';
+    const helpBtnGenderStatusEl = document.getElementById('help-btn-gender-status');
+    if (helpBtnGenderStatusEl) helpBtnGenderStatusEl.innerHTML = texts.helpBtnGenderStatusText || '';
+    const gotItHelpBtnEl = document.getElementById('got-it-help-btn');
+    if (gotItHelpBtnEl) gotItHelpBtnEl.textContent = texts.gotItBtn || 'Зрозуміло!';
 
     updateUI(currentPerson); 
     updateTelegramUserInfoDisplay(); 
@@ -769,13 +1176,15 @@ function updateModeSelect() {
 // Обновление текста языка
 function updateLanguageSelect() {
     const languageSelectOptions = document.querySelector('#language-select .options');
-    languageSelectOptions.innerHTML = `
-        <li data-value="uk" class="px-4 py-2 hover:bg-neon-cyan/20 cursor-pointer text-xs font-headline text-on-surface text-center">Українська</li>
-        <li data-value="ru" class="px-4 py-2 hover:bg-neon-cyan/20 cursor-pointer text-xs font-headline text-on-surface text-center">Русский</li>
-        <li data-value="en" class="px-4 py-2 hover:bg-neon-cyan/20 cursor-pointer text-xs font-headline text-on-surface text-center">English</li>
-        <li data-value="alien" class="px-4 py-2 hover:bg-neon-cyan/20 cursor-pointer text-xs font-headline text-on-surface text-center">👽 ⊸⍟⊸</li>
-    `;
-    document.querySelector('#language-select .selected-option').textContent = selectedLanguage === 'uk' ? 'Українська' : selectedLanguage === 'ru' ? 'Русский' : selectedLanguage === 'en' ? 'English' : '👽 ⊸⍟⊸';
+    if (languageSelectOptions) {
+        languageSelectOptions.innerHTML = Object.keys(languageLabels).map(lang => 
+            `<li data-value="${lang}" class="px-4 py-2 hover:bg-neon-cyan/20 cursor-pointer text-xs font-headline text-on-surface text-center">${languageLabels[lang]}</li>`
+        ).join('');
+    }
+    const selectedOptionEl = document.querySelector('#language-select .selected-option');
+    if (selectedOptionEl) {
+        selectedOptionEl.textContent = languageLabels[selectedLanguage] || 'Українська';
+    }
 }
 
 // Кастомные выпадающие списки (только для языков)
@@ -1872,9 +2281,21 @@ function updateUI(personToDisplay) {
         if (personToDisplay && personToDisplay.personLabel && personToDisplay.personLabel.value && personToDisplay.gender && personToDisplay.gender.value) {
              const genderText = personToDisplay.gender.value.split('/').pop() === 'Q6581097' ? texts.male : texts.female;
              const statusText = personToDisplay.deathDate ? texts.deceased : texts.alive; 
-             const birthText = personToDisplay.birthDate && personToDisplay.birthDate.value ? new Date(personToDisplay.birthDate.value).toLocaleDateString(selectedLanguage === 'alien' ? 'en-GB' : selectedLanguage === 'uk' ? 'uk-UA' : selectedLanguage + '-RU') : texts.unknown;
+             const dateLocales = {
+                 uk: 'uk-UA',
+                 ru: 'ru-RU',
+                 en: 'en-US',
+                 de: 'de-DE',
+                 fr: 'fr-FR',
+                 es: 'es-ES',
+                 zh: 'zh-CN',
+                 it: 'it-IT',
+                 alien: 'en-GB'
+             };
+             const currentLocale = dateLocales[selectedLanguage] || 'en-US';
+             const birthText = personToDisplay.birthDate && personToDisplay.birthDate.value ? new Date(personToDisplay.birthDate.value).toLocaleDateString(currentLocale) : texts.unknown;
              const deathDateVal = personToDisplay.deathDate ? personToDisplay.deathDate.value : null;
-             const deathText = deathDateVal ? `, ${texts.death}: ${new Date(deathDateVal).toLocaleDateString(selectedLanguage === 'alien' ? 'en-GB' : selectedLanguage === 'uk' ? 'uk-UA' : selectedLanguage + '-RU')}` : '';
+             const deathText = deathDateVal ? `, ${texts.death}: ${new Date(deathDateVal).toLocaleDateString(currentLocale)}` : '';
              personDetails.textContent = `${personToDisplay.personLabel.value}, ${genderText}, ${statusText}, ${texts.birth}: ${birthText}${deathText}`;
              personImage.alt = personToDisplay.personLabel.value;
         } else {
@@ -2513,6 +2934,57 @@ function reportProgressOnLeave(trigger) {
     }
 }
 
+// Setup Help / Instructions Modal dialog event listeners
+function initHelpModal() {
+    console.log('[HELP_MODAL_SETUP] Initializing Help modal event listeners...');
+    const helpBtn = document.getElementById('help-btn');
+    const helpModal = document.getElementById('help-modal');
+    const closeHelpBtn = document.getElementById('close-help-btn');
+    const gotItHelpBtn = document.getElementById('got-it-help-btn');
+
+    if (!helpBtn || !helpModal) {
+        console.warn('[HELP_MODAL_WARN] help-btn or help-modal missing from DOM.');
+        return;
+    }
+
+    const openModal = () => {
+        helpModal.classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+        console.log('[HELP_MODAL] Opened help modal.');
+        sendGAEvent('help_modal_opened', { language: selectedLanguage });
+    };
+
+    const closeModal = () => {
+        helpModal.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+        console.log('[HELP_MODAL] Closed help modal.');
+    };
+
+    helpBtn.addEventListener('click', openModal);
+
+    if (closeHelpBtn) {
+        closeHelpBtn.addEventListener('click', closeModal);
+    }
+
+    if (gotItHelpBtn) {
+        gotItHelpBtn.addEventListener('click', closeModal);
+    }
+
+    // Close on backdrop click
+    helpModal.addEventListener('click', (e) => {
+        if (e.target === helpModal) {
+            closeModal();
+        }
+    });
+
+    // Close on Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !helpModal.classList.contains('hidden')) {
+            closeModal();
+        }
+    });
+}
+
 // Setup diagnostics event listeners
 function setupDiagnosticsPanel() {
     console.log('[DIAG_SETUP] Initializing diagnostics panel listeners...');
@@ -2560,7 +3032,18 @@ function setupDiagnosticsPanel() {
             const logsText = window.appLogs.join('\n');
             navigator.clipboard.writeText(logsText).then(() => {
                 const originalText = copyBtn.textContent;
-                copyBtn.textContent = (selectedLanguage === 'uk' ? 'Скопійовано! ✅' : selectedLanguage === 'ru' ? 'Скопировано! ✅' : 'Copied! ✅');
+                const copiedLabels = {
+                    uk: 'Скопійовано! ✅',
+                    ru: 'Скопировано! ✅',
+                    en: 'Copied! ✅',
+                    de: 'Kopiert! ✅',
+                    fr: 'Copié ! ✅',
+                    es: '¡Copiado! ✅',
+                    zh: '已复制！ ✅',
+                    it: 'Copiato! ✅',
+                    alien: '✓ ⊸⍟⊸'
+                };
+                copyBtn.textContent = copiedLabels[selectedLanguage] || copiedLabels.en;
                 setTimeout(() => {
                     copyBtn.textContent = originalText;
                 }, 1500);
@@ -2604,11 +3087,18 @@ function setupDiagnosticsPanel() {
                     runSystemDiagnostics();
                     console.log('[SYSTEM] Diagnostics and logs ENABLED via secret code.');
                     
-                    versionBadge.textContent = (selectedLanguage === 'uk' 
-                        ? `Діагностика увімкнена! 📊 (v${currentVersion})` 
-                        : selectedLanguage === 'ru' 
-                        ? `Диагностика включена! 📊 (v${currentVersion})` 
-                        : `Diagnostics enabled! 📊 (v${currentVersion})`);
+                    const diagEnabledMsgs = {
+                        uk: `Діагностика увімкнена! 📊 (v${currentVersion})`,
+                        ru: `Диагностика включена! 📊 (v${currentVersion})`,
+                        en: `Diagnostics enabled! 📊 (v${currentVersion})`,
+                        de: `Diagnose aktiviert! 📊 (v${currentVersion})`,
+                        fr: `Diagnostic activé ! 📊 (v${currentVersion})`,
+                        es: `¡Diagnóstico activado! 📊 (v${currentVersion})`,
+                        zh: `诊断已启用！ 📊 (v${currentVersion})`,
+                        it: `Diagnostica abilitata! 📊 (v${currentVersion})`,
+                        alien: `⊸⍟⊸ 📊 (v${currentVersion})`
+                    };
+                    versionBadge.textContent = diagEnabledMsgs[selectedLanguage] || diagEnabledMsgs.en;
                     setTimeout(() => {
                         updateLanguage();
                     }, 2000);
@@ -2770,6 +3260,9 @@ const initApp = () => {
         updateNewGameButtonPosition(true);
     }
     updateTelegramUserInfoDisplay(); 
+
+    // Setup Help / Instructions Modal
+    initHelpModal();
 
     // Setup diagnostics panel and run initial diagnostics if enabled
     setupDiagnosticsPanel();

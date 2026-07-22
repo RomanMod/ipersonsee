@@ -98,29 +98,40 @@
     <header class="w-full max-w-md mx-auto px-4 pt-4 z-50">
         <div class="flex flex-col">
             
-            <!-- Controls Cluster (Theme, Language, Mode selectors) -->
-            <div class="grid grid-cols-3 gap-2 w-full">
+            <!-- Controls Cluster (Theme, Language, Mode selectors, Help button) -->
+            <div class="grid grid-cols-4 gap-1.5 w-full items-center">
                 <!-- Theme Toggle -->
-                <button id="theme-toggle" class="bg-surface-container-low/85 border border-white/10 px-3 py-2.5 rounded-full flex items-center justify-center gap-1.5 hover:bg-lunar-gray/60 transition-all group active:scale-95 text-xs font-headline uppercase tracking-wider text-on-surface" aria-label="Переключити тему">
+                <button id="theme-toggle" class="h-9 w-full bg-surface-container-low/85 border border-white/10 px-1 rounded-full flex items-center justify-center gap-1 hover:bg-lunar-gray/60 transition-all group active:scale-95 text-[10px] sm:text-[11px] font-headline uppercase tracking-wider text-on-surface truncate whitespace-nowrap leading-none" aria-label="Переключити тему">
                     🌙 Ніч
                 </button>
                 
                 <!-- Language Dropdown -->
-                <div class="custom-select relative" id="language-select">
-                    <div class="selected-option bg-surface-container-low/85 border border-white/10 px-3 py-2.5 rounded-full flex items-center justify-center gap-1.5 hover:bg-lunar-gray/60 transition-all text-xs font-headline uppercase tracking-wider text-on-surface cursor-pointer select-none text-center">
+                <div class="custom-select relative h-9 w-full flex items-center" id="language-select">
+                    <div class="selected-option h-full w-full bg-surface-container-low/85 border border-white/10 px-1 rounded-full flex items-center justify-center gap-1 hover:bg-lunar-gray/60 transition-all text-[10px] sm:text-[11px] font-headline uppercase tracking-wider text-on-surface cursor-pointer select-none text-center truncate whitespace-nowrap leading-none">
                         Українська
                     </div>
                     <ul class="options absolute left-0 right-0 top-full mt-1.5 bg-void-black/95 border border-white/10 rounded-2xl overflow-hidden z-[100] py-1 shadow-2xl transition-all duration-200" style="display: none;">
-                        <li data-value="uk" class="px-4 py-2 hover:bg-neon-cyan/20 cursor-pointer text-xs font-headline text-on-surface text-center">Українська</li>
-                        <li data-value="ru" class="px-4 py-2 hover:bg-neon-cyan/20 cursor-pointer text-xs font-headline text-on-surface text-center">Русский</li>
-                        <li data-value="en" class="px-4 py-2 hover:bg-neon-cyan/20 cursor-pointer text-xs font-headline text-on-surface text-center">English</li>
-                        <li data-value="alien" class="px-4 py-2 hover:bg-neon-cyan/20 cursor-pointer text-xs font-headline text-on-surface text-center">👽 ⊸⍟⊸</li>
+                        <li data-value="uk" class="px-3 py-2 hover:bg-neon-cyan/20 cursor-pointer text-xs font-headline text-on-surface text-center">Українська</li>
+                        <li data-value="en" class="px-3 py-2 hover:bg-neon-cyan/20 cursor-pointer text-xs font-headline text-on-surface text-center">English</li>
+                        <li data-value="de" class="px-3 py-2 hover:bg-neon-cyan/20 cursor-pointer text-xs font-headline text-on-surface text-center">Deutsch</li>
+                        <li data-value="fr" class="px-3 py-2 hover:bg-neon-cyan/20 cursor-pointer text-xs font-headline text-on-surface text-center">Français</li>
+                        <li data-value="es" class="px-3 py-2 hover:bg-neon-cyan/20 cursor-pointer text-xs font-headline text-on-surface text-center">Español</li>
+                        <li data-value="zh" class="px-3 py-2 hover:bg-neon-cyan/20 cursor-pointer text-xs font-headline text-on-surface text-center">中文</li>
+                        <li data-value="it" class="px-3 py-2 hover:bg-neon-cyan/20 cursor-pointer text-xs font-headline text-on-surface text-center">Italiano</li>
+                        <li data-value="ru" class="px-3 py-2 hover:bg-neon-cyan/20 cursor-pointer text-xs font-headline text-on-surface text-center">Русский</li>
+                        <li data-value="alien" class="px-3 py-2 hover:bg-neon-cyan/20 cursor-pointer text-xs font-headline text-on-surface text-center">👽 ⊸⍟⊸</li>
                     </ul>
                 </div>
                 
                 <!-- Game Mode Toggle Button -->
-                <button id="mode-toggle" class="bg-surface-container-low/85 border border-white/10 px-3 py-2.5 rounded-full flex items-center justify-center gap-1.5 hover:bg-lunar-gray/60 transition-all active:scale-95 text-xs font-headline uppercase tracking-wider text-on-surface select-none text-center">
+                <button id="mode-toggle" class="h-9 w-full bg-surface-container-low/85 border border-white/10 px-1 rounded-full flex items-center justify-center gap-1 hover:bg-lunar-gray/60 transition-all active:scale-95 text-[10px] sm:text-[11px] font-headline uppercase tracking-wider text-on-surface select-none text-center truncate whitespace-nowrap leading-none">
                     Відкритий
+                </button>
+
+                <!-- Help Button -->
+                <button id="help-btn" class="h-9 w-full bg-surface-container-low/85 border border-neon-cyan/30 px-1 rounded-full flex items-center justify-center gap-1 hover:bg-neon-cyan/20 transition-all active:scale-95 text-[10px] sm:text-[11px] font-headline uppercase tracking-wider text-on-surface select-none text-center shadow-[0_0_10px_rgba(0,240,255,0.1)] truncate whitespace-nowrap leading-none" aria-label="Інструкція">
+                    <span class="material-symbols-outlined text-[13px] text-neon-cyan leading-none flex items-center justify-center">help_outline</span>
+                    <span id="help-btn-text" class="truncate leading-none">Довідка</span>
                 </button>
             </div>
         </div>
@@ -151,7 +162,7 @@
                 <!-- Blackout Overlay for Closed Mode -->
                 <div id="overlay" class="absolute inset-0 bg-void-black/95 z-10 hidden transition-all duration-500 flex flex-col items-center justify-center gap-4">
                     <span class="material-symbols-outlined text-4xl text-spirit-violet animate-pulse">lock</span>
-                    <span class="font-mono text-[10px] tracking-widest text-on-surface-variant uppercase">Протокол Порожнечі</span>
+                    <span id="overlay-text" class="font-mono text-[10px] tracking-widest text-on-surface-variant uppercase">Протокол Порожнечі</span>
                 </div>
                 
                 <!-- Thin Progress Indicator -->
@@ -299,6 +310,72 @@
 
     <!-- App Version Badge -->
     <div id="app-version-badge" class="font-mono text-[9px] text-on-surface-variant/40 tracking-[0.3em] uppercase cursor-pointer select-none hover:text-neon-cyan transition-colors mt-8 mb-12">v2.0.6</div>
+
+    <!-- Help / Instructions Modal Dialog -->
+    <div id="help-modal" class="fixed inset-0 bg-void-black/80 backdrop-blur-md z-[200] hidden flex items-center justify-center p-4 transition-all duration-300">
+        <div class="bg-surface-container-low border border-neon-cyan/30 rounded-3xl max-w-md w-full max-h-[85vh] flex flex-col shadow-2xl relative overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <!-- Modal Header -->
+            <div class="p-5 border-b border-white/10 flex items-center justify-between bg-void-black/40">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-neon-cyan text-xl">help_outline</span>
+                    <h3 id="help-modal-title" class="font-headline font-bold text-base tracking-wide text-on-surface">Як грати 📖</h3>
+                </div>
+                <button id="close-help-btn" class="w-8 h-8 rounded-full bg-white/5 hover:bg-white/15 flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors" aria-label="Закрити">
+                    <span class="material-symbols-outlined text-lg">close</span>
+                </button>
+            </div>
+            
+            <!-- Modal Body (Scrollable) -->
+            <div class="p-5 overflow-y-auto space-y-5 text-sm leading-relaxed text-on-surface-variant">
+                <!-- Section 1: Goal -->
+                <div class="space-y-1.5">
+                    <h4 id="help-goal-title" class="font-headline font-semibold text-neon-cyan text-xs uppercase tracking-wider flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-sm">target</span> Мета гри
+                    </h4>
+                    <p id="help-goal-text" class="text-xs text-on-surface/90 bg-surface-container/50 p-3 rounded-2xl border border-white/5">
+                        Вгадати стать людини та стан (живий чи померлий) за наданими фотографіями та підказками.
+                    </p>
+                </div>
+
+                <!-- Section 2: Modes -->
+                <div class="space-y-2">
+                    <h4 id="help-modes-title" class="font-headline font-semibold text-neon-cyan text-xs uppercase tracking-wider flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-sm">tune</span> Режими гри
+                    </h4>
+                    <div class="space-y-2 text-xs">
+                        <div class="bg-surface-container/50 p-3 rounded-2xl border border-white/5 space-y-1">
+                            <div id="help-mode-open-title" class="font-bold text-on-surface flex items-center gap-1">👁️ Відкритий режим</div>
+                            <p id="help-mode-open-text" class="text-on-surface-variant text-[11px]">Фото людини видно одразу. Переглядайте додаткові фото та вивчайте інформацію.</p>
+                        </div>
+                        <div class="bg-surface-container/50 p-3 rounded-2xl border border-white/5 space-y-1">
+                            <div id="help-mode-closed-title" class="font-bold text-spirit-violet flex items-center gap-1">🔒 Закритий режим</div>
+                            <p id="help-mode-closed-text" class="text-on-surface-variant text-[11px]">Фото приховано за екраном. Спочатку зробіть вибір (Стать і Статус), потім натисніть «Перевірити»!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3: Buttons -->
+                <div class="space-y-2">
+                    <h4 id="help-buttons-title" class="font-headline font-semibold text-neon-cyan text-xs uppercase tracking-wider flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-sm">touch_app</span> Кнопки та керування
+                    </h4>
+                    <ul class="text-[11px] space-y-1.5 text-on-surface/90 bg-surface-container/50 p-3 rounded-2xl border border-white/5">
+                        <li id="help-btn-next-photo">🔄 <strong>Знайти нове фото</strong> — завантажити інше фото тієї ж людини.</li>
+                        <li id="help-btn-next-person">👤 <strong>Наступне фото</strong> — перейти до іншої випадкової людини.</li>
+                        <li id="help-btn-check">✅ <strong>Перевірити</strong> — відкрити фото та дізнатися результат (у Закритому режимі).</li>
+                        <li id="help-btn-gender-status">🔘 <strong>Чоловік / Жінка / Живий / Померлий</strong> — варіанти відповідей.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-4 border-t border-white/10 bg-void-black/40 flex justify-end">
+                <button id="got-it-help-btn" class="w-full bg-neon-cyan/20 border border-neon-cyan/40 hover:bg-neon-cyan/30 text-neon-cyan font-headline text-xs uppercase font-bold py-2.5 px-5 rounded-full transition-all active:scale-95 shadow-[0_0_15px_rgba(0,240,255,0.15)]">
+                    Зрозуміло!
+                </button>
+            </div>
+        </div>
+    </div>
 
 
 
